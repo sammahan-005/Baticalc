@@ -17,15 +17,13 @@ def parse_foundations(model):
             "guid": element.GlobalId,
             "nom_instance": element.Name or "Fondation sans nom",
             "type_ifc": "NOTDEFINED",
-            "nom_technique": "Inconnu",
-            "materiau": "Béton Armé (par défaut)"
+            
         }
 
         # 2. Analyse du Type (Semelle isolée, filante, etc.)
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type:
             info["type_ifc"] = getattr(element_type, "PredefinedType", "NOTDEFINED")
-            info["nom_technique"] = element_type.Name or "Type inconnu"
 
         # 3. Extraction des quantités (Pset_FootingCommon ou Qto_FootingBaseQuantities)
         psets = ifcopenshell.util.element.get_psets(element)
@@ -42,7 +40,7 @@ def parse_foundations(model):
             hauteur = info["volume"] / info["surface_base"]
         
         info["hauteur"] = hauteur
-        info["surface_coffrage_lateral"] = info["perimetre"] * hauteur
+
 
         
 
