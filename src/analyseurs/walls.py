@@ -10,19 +10,19 @@ def parse_walls(model):
         info = {
             "guid": wall.GlobalId,
             "nom_instance": wall.Name,
-            "type_ifc": "NOTDEFINED",
-            "nom_technique": "Inconnu",
-            "materiau": "Non spécifié",
+            # "type_ifc": "NOTDEFINED",
+            # "nom_technique": "Inconnu",
+            
         }
 
         
-        if wall.IsTypedBy:
-            rel = wall.IsTypedBy[0]
-            wall_type = rel.RelatingType
+        # if wall.IsTypedBy:
+        #     rel = wall.IsTypedBy[0]
+        #     wall_type = rel.RelatingType
             
             
-            info["type_ifc"] = wall_type.PredefinedType if wall_type.PredefinedType else "NOTDEFINED"
-            info["nom_technique"] = wall_type.Name if wall_type.Name else "Inconnu"
+        #     info["type_ifc"] = wall_type.PredefinedType if wall_type.PredefinedType else "NOTDEFINED"
+        #     info["nom_technique"] = wall_type.Name if wall_type.Name else "Inconnu"
 
         
         psets = ifcopenshell.util.element.get_psets(wall)

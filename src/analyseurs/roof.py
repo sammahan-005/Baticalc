@@ -1,61 +1,54 @@
 import ifcopenshell
 import ifcopenshell.util.element
 
-def parse_roofs(model):
-    donnees_toitures = []
-    # On récupère les objets Toiture et les Dalles typées 'ROOF'
-    roofs = model.by_type("IfcRoof")
-    slabs = model.by_type("IfcSlab")
+def extraire_donnees_devis_toiture(element):
+    """
+    Extrait les données de surfaces, pentes et matériaux pour le devis d'une toiture.
+    Compatible avec IfcRoof et IfcSlab (Type ROOF).
+    """
     
-    # Filtrage des dalles qui servent de toiture (ex: toits plats ou pans isolés)
-    roof_slabs = [s for s in slabs if ifcopenshell.util.element.get_type(s) and 
-                  ifcopenshell.util.element.get_type(s).PredefinedType == "ROOF"]
+    info = {
+        "id": element.id(),
+        "nom": element.Name or "Toiture sans nom",
+        "type_objet": element.is_a(), # IfcRoof ou IfcSlab
+        "etage": "",
+        "surface_horizontale": 0, # Surface projetée au sol
+        "surface_reelle": 0,      # Surface inclinée (développée)
+        "pente_moyenne": 0,       # En degrés ou pourcentage
+        "materiaux": []
+    }
+
+   
+    container = ifcopenshell.util.element.get_container(element)
+    if container:
+        info["etage"] = container.Name
+
+    # 3. Extraction des quantités (Qto_RoofBaseQuantities ou Qto_SlabBaseQuantities)
+    psets = ifcopenshell.util.element.get_psets(element)
     
-    elements = roofs + roof_slabs
+    # On cherche dans les sets de quantités standards
+    qto_names = ["Qto_RoofBaseQuantities", "Qto_SlabBaseQuantities", "Pset_Revit_Dimensions"]
+    for name in qto_names:
+        if name in psets:
+            qto = psets[name]
+            # Surface projetée (vue de dessus)
+            info["surface_horizontale"] = qto.get("GrossArea", qto.get("Area", 0))
+            # Surface réelle (si inclinée)
+            info["surface_reelle"] = qto.get("NetSurfaceArea", info["surface_horizontale"])
+            break
 
-    for element in elements:
-        
-        info = {
-            "guid": element.GlobalId,
-            "nom_instance": element.Name or "Toiture sans nom",
-            "type_ifc": "NOTDEFINED",
-            "nom_technique": "Inconnu",
-            "pente": 0,
-            "materiau": "Non spécifié"
-        }
+    # 4. Extraction de la pente (Slope)
+    # Souvent dans Pset_RoofCommon ou calculée via les propriétés de type
+    common_set = psets.get("Pset_RoofCommon", psets.get("Pset_SlabCommon", {}))
+    info["pente_moyenne"] = common_set.get("Slope", 0)
 
-        
-        element_type = ifcopenshell.util.element.get_type(element)
-        if element_type:
-            info["type_ifc"] = getattr(element_type, "PredefinedType", "NOTDEFINED")
-            info["nom_technique"] = element_type.Name or "Type inconnu"
+    # 5. Liste des composants / Matériaux
+    # Pour une toiture, on peut avoir un complexe (Isolant + Étanchéité)
+    material_assoc = ifcopenshell.util.element.get_material(element)
+    if material_assoc:
+        if hasattr(material_assoc, "Materials"): # Si c'est un IfcMaterialList
+            info["materiaux"] = [m.Name for m in material_assoc.Materials]
+        elif hasattr(material_assoc, "Name"):    # Si c'est un matériau unique
+            info["materiaux"] = [material_assoc.Name]
 
-        
-        psets = ifcopenshell.util.element.get_psets(element)
-        # On fusionne les sources possibles pour les toits et les dalles
-        qto = {**psets.get("BaseQuantities", {}), 
-               **psets.get("Qto_RoofBaseQuantities", {}), 
-               **psets.get("Qto_SlabBaseQuantities", {})}
-        
-        
-        info["surface_rampante"] = qto.get("GrossSurfaceArea", qto.get("NetArea", 0))
-        # Surface au sol (projetée) pour la charpente/plafond
-        info["surface_projetee"] = qto.get("ProjectedArea", 0)
-        
-       
-        common = psets.get("Pset_RoofCommon") or psets.get("Pset_SlabCommon") or {}
-        info["pente"] = common.get("Slope", 0)
-
-       
-        if info["type_ifc"] == "NOTDEFINED":
-            nom_clean = info["nom_technique"].lower()
-            if any(w in nom_clean for w in ["tuile", "tile"]):
-                info["type_ifc"] = "COUVERTURE_TUILE"
-            elif any(w in nom_clean for w in ["acier", "bac", "tole", "tôle"]):
-                info["type_ifc"] = "COUVERTURE_METALLIQUE"
-            elif "terrasse" in nom_clean:
-                info["type_ifc"] = "TOIT_TERRASSE"
-
-        donnees_toitures.append(info)
-        
-    return donnees_toitures
+    return info
