@@ -1,0 +1,110 @@
+<ui version="4.0">
+ <class>ResultsWindow</class>
+ <widget class="QMainWindow" name="ResultsWindow">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>1100</width><height>750</height></rect></property>
+  <property name="windowTitle"><string>BATICALC - Resultats</string></property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="mainLayout">
+    <!-- HEADER BAR -->
+    <item>
+     <widget class="QWidget" name="headerBar">
+      <property name="minimumSize"><size><width>0</width><height>70</height></size></property>
+      <layout class="QHBoxLayout" name="headerLayout">
+       <item><widget class="QLabel" name="label_titre"><property name="text"><string>Resultats d'analyse IFC</string></property></widget></item>
+       <item><spacer><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
+       <item><widget class="QLabel" name="label_nom_projet"><property name="text"><string>Projet</string></property></widget></item>
+       <item>
+        <widget class="QPushButton" name="btn_exporter_pdf">
+         <property name="minimumSize"><size><width>180</width><height>45</height></size></property>
+         <property name="text"><string>Telecharger PDF</string></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_retour">
+         <property name="minimumSize"><size><width>120</width><height>45</height></size></property>
+         <property name="text"><string>Retour</string></property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <!-- STATS BAR -->
+    <item>
+     <widget class="QWidget" name="statsBar">
+      <property name="minimumSize"><size><width>0</width><height>90</height></size></property>
+      <layout class="QHBoxLayout" name="statsLayout">
+       <item>
+        <widget class="QFrame" name="stat_murs"><property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+         <layout class="QVBoxLayout">
+          <item><widget class="QLabel" name="label_nb_murs"><property name="text"><string>0</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+          <item><widget class="QLabel" name="label_nb_murs_txt"><property name="text"><string>Murs</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QFrame" name="stat_fondations"><property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+         <layout class="QVBoxLayout">
+          <item><widget class="QLabel" name="label_nb_fondations"><property name="text"><string>0</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+          <item><widget class="QLabel" name="label_nb_fondations_txt"><property name="text"><string>Fondations</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QFrame" name="stat_poteaux"><property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+         <layout class="QVBoxLayout">
+          <item><widget class="QLabel" name="label_nb_poteaux"><property name="text"><string>0</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+          <item><widget class="QLabel" name="label_nb_poteaux_txt"><property name="text"><string>Poteaux</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QFrame" name="stat_toitures"><property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+         <layout class="QVBoxLayout">
+          <item><widget class="QLabel" name="label_nb_toitures"><property name="text"><string>0</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+          <item><widget class="QLabel" name="label_nb_toitures_txt"><property name="text"><string>Toitures</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <!-- TABS -->
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <widget class="QWidget" name="tab_murs">
+       <attribute name="title"><string>Murs</string></attribute>
+       <layout class="QVBoxLayout" name="murLayout">
+        <item><widget class="QTableWidget" name="table_murs"><property name="columnCount"><number>6</number></property><property name="editTriggers"><set>QAbstractItemView::NoEditTriggers</set></property><property name="selectionBehavior"><enum>QAbstractItemView::SelectRows</enum></property><property name="alternatingRowColors"><bool>true</bool></property></widget></item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_fondations">
+       <attribute name="title"><string>Fondations</string></attribute>
+       <layout class="QVBoxLayout" name="fondLayout">
+        <item><widget class="QTableWidget" name="table_fondations"><property name="columnCount"><number>6</number></property><property name="editTriggers"><set>QAbstractItemView::NoEditTriggers</set></property><property name="selectionBehavior"><enum>QAbstractItemView::SelectRows</enum></property><property name="alternatingRowColors"><bool>true</bool></property></widget></item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_poteaux">
+       <attribute name="title"><string>Poteaux</string></attribute>
+       <layout class="QVBoxLayout" name="poteauxLayout">
+        <item><widget class="QTableWidget" name="table_poteaux"><property name="columnCount"><number>6</number></property><property name="editTriggers"><set>QAbstractItemView::NoEditTriggers</set></property><property name="selectionBehavior"><enum>QAbstractItemView::SelectRows</enum></property><property name="alternatingRowColors"><bool>true</bool></property></widget></item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_toitures">
+       <attribute name="title"><string>Toitures</string></attribute>
+       <layout class="QVBoxLayout" name="toitLayout">
+        <item><widget class="QTableWidget" name="table_toitures"><property name="columnCount"><number>5</number></property><property name="editTriggers"><set>QAbstractItemView::NoEditTriggers</set></property><property name="selectionBehavior"><enum>QAbstractItemView::SelectRows</enum></property><property name="alternatingRowColors"><bool>true</bool></property></widget></item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_erreurs">
+       <attribute name="title"><string>Avertissements</string></attribute>
+       <layout class="QVBoxLayout" name="errLayout">
+        <item><widget class="QTextEdit" name="text_erreurs"><property name="readOnly"><bool>true</bool></property></widget></item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/><connections/>
+</ui>
