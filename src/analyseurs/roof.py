@@ -1,54 +1,66 @@
 import ifcopenshell
 import ifcopenshell.util.element
 
-def extraire_donnees_devis_toiture(element):
+def parse_roofs(model):
     """
-    Extrait les données de surfaces, pentes et matériaux pour le devis d'une toiture.
-    Compatible avec IfcRoof et IfcSlab (Type ROOF).
+    Parcourt le modèle IFC pour extraire les données de devis de toutes les toitures
+    (IfcRoof et IfcSlab typés ROOF).
     """
+    donnees_toitures = []
+
+    # 1. Sélection des éléments (Toitures natives et Dalles de type ROOF)
+    roofs = model.by_type("IfcRoof")
+    slabs = model.by_type("IfcSlab")
     
-    info = {
-        "id": element.id(),
-        "nom": element.Name or "Toiture sans nom",
-        "type_objet": element.is_a(), # IfcRoof ou IfcSlab
-        "etage": "",
-        "surface_horizontale": 0, # Surface projetée au sol
-        "surface_reelle": 0,      # Surface inclinée (développée)
-        "pente_moyenne": 0,       # En degrés ou pourcentage
-        "materiaux": []
-    }
-
-   
-    container = ifcopenshell.util.element.get_container(element)
-    if container:
-        info["etage"] = container.Name
-
-    # 3. Extraction des quantités (Qto_RoofBaseQuantities ou Qto_SlabBaseQuantities)
-    psets = ifcopenshell.util.element.get_psets(element)
+    # Filtrage des dalles qui servent de toiture
+    roof_slabs = [s for s in slabs if ifcopenshell.util.element.get_type(s) and 
+                  ifcopenshell.util.element.get_type(s).PredefinedType == "ROOF"]
     
-    # On cherche dans les sets de quantités standards
-    qto_names = ["Qto_RoofBaseQuantities", "Qto_SlabBaseQuantities", "Pset_Revit_Dimensions"]
-    for name in qto_names:
-        if name in psets:
-            qto = psets[name]
-            # Surface projetée (vue de dessus)
-            info["surface_horizontale"] = qto.get("GrossArea", qto.get("Area", 0))
-            # Surface réelle (si inclinée)
-            info["surface_reelle"] = qto.get("NetSurfaceArea", info["surface_horizontale"])
-            break
+    # Fusion des deux listes
+    elements_a_traiter = roofs + roof_slabs
 
-    # 4. Extraction de la pente (Slope)
-    # Souvent dans Pset_RoofCommon ou calculée via les propriétés de type
-    common_set = psets.get("Pset_RoofCommon", psets.get("Pset_SlabCommon", {}))
-    info["pente_moyenne"] = common_set.get("Slope", 0)
+    # 2. Boucle d'extraction des données
+    for element in elements_a_traiter:
+        info = {
+            "id": element.id(),
+            "guid": element.GlobalId,
+            "nom": element.Name or "Toiture sans nom",
+            "type_objet": element.is_a(),
+            "etage": "",
+            "surface_horizontale": 0,
+            "surface_reelle": 0,
+            "pente_moyenne": 0,
+            # "materiaux": []
+        }
 
-    # 5. Liste des composants / Matériaux
-    # Pour une toiture, on peut avoir un complexe (Isolant + Étanchéité)
-    material_assoc = ifcopenshell.util.element.get_material(element)
-    if material_assoc:
-        if hasattr(material_assoc, "Materials"): # Si c'est un IfcMaterialList
-            info["materiaux"] = [m.Name for m in material_assoc.Materials]
-        elif hasattr(material_assoc, "Name"):    # Si c'est un matériau unique
-            info["materiaux"] = [material_assoc.Name]
+        # Localisation (Étage)
+        container = ifcopenshell.util.element.get_container(element)
+        if container:
+            info["etage"] = container.Name
 
-    return info
+        # Extraction des quantités
+        psets = ifcopenshell.util.element.get_psets(element)
+        qto_names = ["Qto_RoofBaseQuantities", "Qto_SlabBaseQuantities", "Pset_Revit_Dimensions"]
+        
+        for name in qto_names:
+            if name in psets:
+                qto = psets[name]
+                info["surface_horizontale"] = qto.get("GrossArea", qto.get("Area", 0))
+                info["surface_reelle"] = qto.get("NetSurfaceArea", info["surface_horizontale"])
+                break
+
+        # Extraction de la pente
+        common_set = psets.get("Pset_RoofCommon", psets.get("Pset_SlabCommon", {}))
+        info["pente_moyenne"] = common_set.get("Slope", 0)
+
+        # Matériaux
+        # material_assoc = ifcopenshell.util.element.get_material(element)
+        # if material_assoc:
+        #     if hasattr(material_assoc, "Materials"):
+        #         info["materiaux"] = [m.Name for m in material_assoc.Materials]
+        #     elif hasattr(material_assoc, "Name"):
+        #         info["materiaux"] = [material_assoc.Name]
+
+        donnees_toitures.append(info)
+
+    return donnees_toitures

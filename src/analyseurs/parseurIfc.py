@@ -1,25 +1,106 @@
-import analyseurIfc
-import walls
-import foundations
-import column
-import roof
+# src/analyseurs/parseurIfc.py
+import sys
+import os
+from src.configuration import DB_PATH
 
-IFC_PATH = "/home/mahan-samuel/Bureau/Projets/BatiCalc/exemples_ifc/Test2.ifc"
 
-def parseur(chemin_fichier):
-    model = analyseurIfc.analyseur_fichier_ifc(chemin_fichier)#ouvrir le fichier 
-    if model:
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.analyseurs import analyseurIfc, walls, foundations, column, roof
+
+
+def parseur(chemin_fichier: str) -> dict:
+    """
+    Analyse complète d'un fichier IFC.
+    Retourne un dictionnaire avec tous les éléments extraits.
+    """
+    model = analyseurIfc.analyseur_fichier_ifc(chemin_fichier)
+    if not model:
+        return {"erreur": "Impossible d'ouvrir le fichier IFC."}
+
+    resultats = {
+        "murs":        [],
+        "fondations":  [],
+        "poteaux":     [],
+        "toitures":    [],
+        "erreurs":     []
+    }
+
+    try:
+        resultats["murs"] = walls.parse_walls(model)
+    except Exception as e:
+        resultats["erreurs"].append(f"Murs: {e}")
+
+    try:
+        resultats["fondations"] = foundations.parse_foundations(model)
+    except Exception as e:
+        resultats["erreurs"].append(f"Fondations: {e}")
+
+    try:
+        resultats["poteaux"] = column.parse_columns(model)
+    except Exception as e:
+        resultats["erreurs"].append(f"Poteaux: {e}")
+
+    try:
+        resultats["toitures"] = roof.parse_roofs(model)
+    except Exception as e:
+        resultats["erreurs"].append(f"Toitures: {e}")
+
+    # --- BLOC D’INSERTION EN BASE SQLITE (AJOUTÉ, SANS MODIFIER LE CODE AU-DESSUS) ---
+    try:
+        import sqlite3
+
+        conn = sqlite3.connect(DB_PATH)  # on réutilise le chemin centralisé
+        cur = conn.cursor()
+
+   
+        for mur in resultats["murs"]:
+            cur.execute(
+                """
+                INSERT INTO murs (guid, nom_instance, type_ifc, surface, volume, hauteur)
+                VALUES (:guid, :nom_instance, :type_ifc, :surface, :volume, :hauteur)
+                """,
+                mur,
+            )
+
         
-        donnees_murs = walls.parse_walls(model)
-        #donnees_foundations = foundations.parse_foundations(model)
-        #donnees_columns = column.parse_columns(model)
-        #donnees-toit = roof.parse_roofs
-        
-        #return donnees_foundations
-        #return donnees_murs
-        return donnees_murs
-    else:
-        return 0
+        for f in resultats["fondations"]:
+            cur.execute(
+                """
+                INSERT INTO fondations (guid, nom_instance, type_ifc, volume, surface_base, perimetre, hauteur)
+                VALUES (:guid, :nom_instance, :type_ifc, :volume, :surface_base, :perimetre, :hauteur)
+                """,
+                f,
+            )
 
-data=parseur(IFC_PATH)
-print(data[0])
+        
+        for p in resultats["poteaux"]:
+            cur.execute(
+                """
+                INSERT INTO poteaux (guid, nom, etage, materiau, hauteur, surface_section, volume_net, poids_estime_kg)
+                VALUES (:guid, :nom, :etage, :materiau, :hauteur, :surface_section, :volume_net, :poids_estime_kg)
+                """,
+                p,
+            )
+
+    
+        for t in resultats["toitures"]:
+            cur.execute(
+                """
+                INSERT INTO toitures (id, guid, nom, type_objet, etage, surface_horizontale, surface_reelle, pente_moyenne)
+                VALUES (:id, :guid, :nom, :type_objet, :etage, :surface_horizontale, :surface_reelle, :pente_moyenne)
+                """,
+                t,
+            )
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+   
+        resultats["erreurs"].append(f"BDD: {e}")
+
+
+    return resultats

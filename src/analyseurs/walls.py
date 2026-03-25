@@ -10,8 +10,8 @@ def parse_walls(model):
         info = {
             "guid": wall.GlobalId,
             "nom_instance": wall.Name,
-            # "type_ifc": "NOTDEFINED",
-            # "nom_technique": "Inconnu",
+            "type_ifc": "NOTDEFINED",
+            
             
         }
 
