@@ -1,25 +1,48 @@
-import analyseurIfc
-import walls
-import foundations
-import column
-import roof
+# src/analyseurs/parseurIfc.py
+import sys
+import os
 
-IFC_PATH = "/home/mahan-samuel/Bureau/Projets/BatiCalc/exemples_ifc/Test2.ifc"
+# Allow imports from src/ when running standalone
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-def parseur(chemin_fichier):
-    model = analyseurIfc.analyseur_fichier_ifc(chemin_fichier)#ouvrir le fichier 
-    if model:
-        
-        donnees_murs = walls.parse_walls(model)
-        #donnees_foundations = foundations.parse_foundations(model)
-        #donnees_columns = column.parse_columns(model)
-        #donnees-toit = roof.parse_roofs
-        
-        #return donnees_foundations
-        #return donnees_murs
-        return donnees_murs
-    else:
-        return 0
+from src.analyseurs import analyseurIfc, walls, foundations, column, roof
 
-data=parseur(IFC_PATH)
-print(data[0])
+
+def parseur(chemin_fichier: str) -> dict:
+    """
+    Analyse complète d'un fichier IFC.
+    Retourne un dictionnaire avec tous les éléments extraits.
+    """
+    model = analyseurIfc.analyseur_fichier_ifc(chemin_fichier)
+    if not model:
+        return {"erreur": "Impossible d'ouvrir le fichier IFC."}
+
+    resultats = {
+        "murs":        [],
+        "fondations":  [],
+        "poteaux":     [],
+        "toitures":    [],
+        "erreurs":     []
+    }
+
+    try:
+        resultats["murs"] = walls.parse_walls(model)
+    except Exception as e:
+        resultats["erreurs"].append(f"Murs: {e}")
+
+    try:
+        resultats["fondations"] = foundations.parse_foundations(model)
+    except Exception as e:
+        resultats["erreurs"].append(f"Fondations: {e}")
+
+    try:
+        resultats["poteaux"] = column.parse_columns(model)
+    except Exception as e:
+        resultats["erreurs"].append(f"Poteaux: {e}")
+
+    try:
+        resultats["toitures"] = roof.parse_roofs(model)
+    except Exception as e:
+        resultats["erreurs"].append(f"Toitures: {e}")
+
+    return resultats
