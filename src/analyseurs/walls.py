@@ -16,13 +16,13 @@ def parse_walls(model):
         }
 
         
-        # if wall.IsTypedBy:
-        #     rel = wall.IsTypedBy[0]
-        #     wall_type = rel.RelatingType
+        if wall.IsTypedBy:
+            rel = wall.IsTypedBy[0]
+            wall_type = rel.RelatingType
             
             
-        #     info["type_ifc"] = wall_type.PredefinedType if wall_type.PredefinedType else "NOTDEFINED"
-        #     info["nom_technique"] = wall_type.Name if wall_type.Name else "Inconnu"
+            info["type_ifc"] = wall_type.PredefinedType if wall_type.PredefinedType else "NOTDEFINED"
+            info["nom_technique"] = wall_type.Name if wall_type.Name else "Inconnu"
 
         
         psets = ifcopenshell.util.element.get_psets(wall)
@@ -39,3 +39,9 @@ def parse_walls(model):
         
     return donnees_murs
 
+
+
+# chemin_fichier="/home/mahan-samuel/Téléchargements/Test8.ifc"
+# model = ifcopenshell.open(chemin_fichier)
+# data=parse_walls(model)
+# print(data[4]) 

@@ -6,7 +6,11 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                                 QStackedWidget, QFrame, QProgressBar,
                                 QGraphicsOpacityEffect, QSizePolicy, QSpacerItem)
 from PySide6.QtGui import QPainter, QColor, QBrush, QPen, QFont
-from src.authentification import get_projets_utilisateur, creer_projet
+from generated.ui_dashboard import Ui_DashboardWindow
+from src.base_de_donnees import get_projets_utilisateur, creer_projet
+import session 
+
+
 
 SIDEBAR_STYLE = """
 QWidget#sidebar {
@@ -653,26 +657,37 @@ class DashboardWindow(QMainWindow):
             self.input_chemin_ifc.setText(chemin)
 
     def on_creer_projet(self):
-        nom    = self.input_nom_projet.text().strip()
-        chemin = self.input_chemin_ifc.text().strip()
-        if not nom:
-            self.lbl_np_erreur.setText("Veuillez saisir un nom de projet.")
-            self.lbl_np_erreur.show()
+        nom = self.ui.input_nom_projet.text().strip()
+        chemin = self.ui.input_chemin_ifc.text().strip()
+        
+        if not nom or not chemin:
+            msg = "Veuillez saisir un nom." if not nom else "Veuillez sélectionner un fichier IFC."
+            self.ui.label_np_erreur.setText(msg)
             return
-        if not chemin:
-            self.lbl_np_erreur.setText("Veuillez sélectionner un fichier IFC.")
-            self.lbl_np_erreur.show()
-            return
-        self.lbl_np_erreur.hide()
-        self.progress_bar.setValue(40)
-        self.btn_creer_projet.setEnabled(False)
+
+        self.ui.label_np_erreur.setText("")
+        self.ui.progress_bar.setValue(40)
+        self.ui.btn_creer_projet.setEnabled(False)
+
+        # Appel de la logique métier
         res = creer_projet(self.utilisateur["id"], nom, chemin)
-        self.progress_bar.setValue(100)
-        self.btn_creer_projet.setEnabled(True)
+
         if res["succes"]:
-            self.input_nom_projet.clear()
-            self.input_chemin_ifc.clear()
-            self.progress_bar.setValue(0)
+            # Mise à jour de la session globale
+            session.projet_actuel.update({
+                "id": res["projet_id"],
+                "nom": nom,
+                "chemin": chemin,
+                "actif": True
+            })
+
+            # Nettoyage
+            self.ui.input_nom_projet.clear()
+            self.ui.input_chemin_ifc.clear()
+            self.ui.progress_bar.setValue(0)
+            self.ui.btn_creer_projet.setEnabled(True)
+
+            # Transition
             from src.ui_handlers.results_handler import ResultsWindow
             self.results = ResultsWindow(
                 chemin_ifc=chemin, nom_projet=nom,
@@ -681,9 +696,10 @@ class DashboardWindow(QMainWindow):
             self.results.show()
             self.hide()
         else:
-            self.lbl_np_erreur.setText(res["erreur"])
-            self.lbl_np_erreur.show()
-            self.progress_bar.setValue(0)
+            # En cas d'échec
+            self.ui.label_np_erreur.setText(f"Erreur : {res['erreur']}")
+            self.ui.btn_creer_projet.setEnabled(True)
+            self.ui.progress_bar.setValue(0) # Reset car l'opération a échoué
 
     def on_deconnexion(self):
         from src.ui_handlers.welcome_handler import WelcomeWindow

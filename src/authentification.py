@@ -66,35 +66,35 @@ def connecter_utilisateur(email: str, mot_de_passe: str) -> dict:
         conn.close()
 
 
-def get_projets_utilisateur(utilisateur_id: int) -> list:
-    """Retourne tous les projets d'un utilisateur."""
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM projets WHERE utilisateur_id = ? "
-        "ORDER BY cree_le DESC",
-        (utilisateur_id,)
-    )
-    rows = [dict(r) for r in cursor.fetchall()]
-    conn.close()
-    return rows
+# def get_projets_utilisateur(utilisateur_id: int) -> list:
+#     """Retourne tous les projets d'un utilisateur."""
+#     conn = get_connection()
+#     cursor = conn.cursor()
+#     cursor.execute(
+#         "SELECT * FROM projets WHERE utilisateur_id = ? "
+#         "ORDER BY cree_le DESC",
+#         (utilisateur_id,)
+#     )
+#     rows = [dict(r) for r in cursor.fetchall()]
+#     conn.close()
+#     return rows
 
 
-def creer_projet(utilisateur_id: int, nom: str, chemin_ifc: str = None) -> dict:
-    """Crée un nouveau projet."""
-    conn = get_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            "INSERT INTO projets (utilisateur_id, nom, chemin_ifc, statut) "
-            "VALUES (?, ?, ?, 'en_attente')",
-            (utilisateur_id, nom, chemin_ifc)
-        )
-        conn.commit()
-        projet_id = cursor.lastrowid
-        cursor.execute("SELECT * FROM projets WHERE id = ?", (projet_id,))
-        return {"succes": True, "projet": dict(cursor.fetchone())}
-    except Exception as e:
-        return {"succes": False, "erreur": str(e)}
-    finally:
-        conn.close()
+# def creer_projet(utilisateur_id: int, nom: str, chemin_ifc: str = None) -> dict:
+#     """Crée un nouveau projet."""
+#     conn = get_connection()
+#     cursor = conn.cursor()
+#     try:
+#         cursor.execute(
+#             "INSERT INTO projets (utilisateur_id, nom, chemin_ifc, statut) "
+#             "VALUES (?, ?, ?, 'en_attente')",
+#             (utilisateur_id, nom, chemin_ifc)
+#         )
+#         conn.commit()
+#         projet_id = cursor.lastrowid
+#         cursor.execute("SELECT * FROM projets WHERE id = ?", (projet_id,))
+#         return {"succes": True, "projet": dict(cursor.fetchone())}
+#     except Exception as e:
+#         return {"succes": False, "erreur": str(e)}
+#     finally:
+#         conn.close()

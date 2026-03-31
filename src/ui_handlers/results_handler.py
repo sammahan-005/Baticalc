@@ -169,6 +169,8 @@ class AnalyseThread(QThread):
             self.erreur.emit(str(e))
 
 
+# ── Results window ──────────────────────────────────────────────────────────
+
 class ResultsWindow(QMainWindow):
     def __init__(self, chemin_ifc, nom_projet, utilisateur, dashboard_ref=None):
         super().__init__()
@@ -377,30 +379,32 @@ class ResultsWindow(QMainWindow):
                 item.setTextAlignment(Qt.AlignCenter)
                 table.setItem(r, c, item)
 
-    def _fill_murs(self, murs):
-        self._fill(self.table_murs, [
-            [m.get("nom_instance","—"), m.get("type_ifc","—"), m.get("materiau","—"),
-             f"{m.get('surface',0):.2f}", f"{m.get('volume',0):.3f}",
+    def _remplir_murs(self, murs):
+        self._fill_table(self.ui.table_murs, [
+            [m.get("nom_instance","—"), m.get("type_ifc","—"),
+             f"{m.get('surface',0):.3f}", f"{m.get('volume',0):.3f}",
              f"{m.get('hauteur',0):.2f}"] for m in murs])
 
-    def _fill_fondations(self, fonds):
-        self._fill(self.table_fondations, [
-            [f.get("nom_instance","—"), f.get("type_ifc","—"),
-             f"{f.get('volume',0):.3f}", f"{f.get('surface_base',0):.2f}",
-             f"{f.get('hauteur',0):.2f}", f"{f.get('surface_coffrage_lateral',0):.2f}"]
-            for f in fonds])
+    def _remplir_fondations(self, fondations):
+        self._fill_table(self.ui.table_fondations, [
+            [f.get("nom_instance","—"),f"{f.get("type_ifc","—")}",
+             f"{f.get('volume',0):.3f}", f"{f.get('surface_base',0):.3f}",
+             f"{f.get('hauteur',0):.3f}",f"{f.get('perimetre',0):.3f}"]
+            for f in fondations])
 
-    def _fill_poteaux(self, poteaux):
-        self._fill(self.table_poteaux, [
-            [p.get("nom","—"), p.get("materiau","—"), p.get("etage","—"),
+    def _remplir_poteaux(self, poteaux):
+        self._fill_table(self.ui.table_poteaux, [
+            [p.get("nom","—"),p.get("etage","—"),p.get("materiau","—"),
              f"{p.get('hauteur',0):.2f}", f"{p.get('volume_net',0):.3f}",
-             f"{p.get('poids_estime_kg',0):.0f}"] for p in poteaux])
+             f"{p.get('surface_section',0):.3f}"] for p in poteaux])
 
-    def _fill_toitures(self, toitures):
-        self._fill(self.table_toitures, [
-            [t.get("nom","—"), t.get("type_objet","—"), t.get("etage","—"),
-             f"{t.get('surface_horizontale',0):.2f}", f"{t.get('surface_reelle',0):.2f}",
+    def _remplir_toitures(self, toitures):
+        self._fill_table(self.ui.table_toitures, [
+            [t.get("nom_instance","—"), t.get("type_ifc","—"),
+             f"{t.get('surface_horizontale',0):.3f}", f"{t.get('surface_reele',0):.3f}",
              f"{t.get('pente_moyenne',0):.1f}"] for t in toitures])
+
+    # ── Export PDF ────────────────────────────────────────────────────────────
 
     # ── Export PDF ────────────────────────────────────────
     def on_exporter_pdf(self):
