@@ -22,10 +22,10 @@ def parse_roofs(model):
     # 2. Boucle d'extraction des données
     for element in elements_a_traiter:
         info = {
-            "id": element.id(),
+           
             "guid": element.GlobalId,
-            "nom": element.Name or "Toiture sans nom",
-            "type_objet": element.is_a(),
+            "nom_instance": element.Name or "Toiture sans nom",
+            "type_ifc": element.is_a(),
             "etage": "",
             "surface_horizontale": 0,
             "surface_reelle": 0,
@@ -46,7 +46,7 @@ def parse_roofs(model):
             if name in psets:
                 qto = psets[name]
                 info["surface_horizontale"] = qto.get("GrossArea", qto.get("Area", 0))
-                info["surface_reelle"] = qto.get("NetSurfaceArea", info["surface_horizontale"])
+                info["surface_reelle"] = qto.get("NetArea", info["surface_horizontale"])
                 break
 
         # Extraction de la pente
@@ -64,3 +64,11 @@ def parse_roofs(model):
         donnees_toitures.append(info)
 
     return donnees_toitures
+
+
+
+
+# chemin_fichier="/home/mahan-samuel/Téléchargements/Test8.ifc"
+# model = ifcopenshell.open(chemin_fichier)
+# data=parse_roofs(model)
+# print(data[3]) 

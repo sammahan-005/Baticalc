@@ -63,7 +63,7 @@ class AnalyseThread(QThread):
             self.erreur.emit(str(e))
 
 
-# ── Results window ────────────────────────────────────────────────────────────
+# ── Results window ──────────────────────────────────────────────────────────
 
 class ResultsWindow(QMainWindow):
     def __init__(self, chemin_ifc: str, nom_projet: str,
@@ -99,13 +99,13 @@ class ResultsWindow(QMainWindow):
 
     def _setup_tables(self):
         self.ui.table_murs.setHorizontalHeaderLabels(
-            ["Nom", "Type IFC", "Materiau", "Surface (m2)", "Volume (m3)", "Hauteur (m)"])
+            ["Nom", "Type IFC", "Surface (m2)", "Volume (m3)", "Hauteur (m)"])
         self.ui.table_fondations.setHorizontalHeaderLabels(
-            ["Nom", "Type", "Volume (m3)", "Surface (m2)", "Hauteur (m)", "Coffrage (m2)"])
+            ["Nom", "Type", "Volume (m3)", "Surface (m2)", "Hauteur (m)", "Perimetre (m)"])
         self.ui.table_poteaux.setHorizontalHeaderLabels(
-            ["Nom", "Section", "Niveau", "Hauteur (m)", "Volume (m3)", "Coffrage (m2)"])
+            ["Nom", "Materiau","Niveau", "Hauteur (m)", "Volume (m3)","Surface section (m2)"])
         self.ui.table_toitures.setHorizontalHeaderLabels(
-            ["Nom", "Type", "Surface rampante (m2)", "Surface projetee (m2)", "Pente"])
+            ["Nom", "Type", "Surface horizontale (m2)", "Surface reelle (m2)", "Pente"])
 
         for table in [self.ui.table_murs, self.ui.table_fondations,
                       self.ui.table_poteaux, self.ui.table_toitures]:
@@ -164,28 +164,28 @@ class ResultsWindow(QMainWindow):
 
     def _remplir_murs(self, murs):
         self._fill_table(self.ui.table_murs, [
-            [m.get("nom_instance","—"), m.get("type_ifc","—"), m.get("materiau","—"),
+            [m.get("nom_instance","—"), m.get("type_ifc","—"),
              f"{m.get('surface',0):.3f}", f"{m.get('volume',0):.3f}",
              f"{m.get('hauteur',0):.2f}"] for m in murs])
 
     def _remplir_fondations(self, fondations):
         self._fill_table(self.ui.table_fondations, [
-            [f.get("nom_instance","—"), f.get("nom_technique","—"),
+            [f.get("nom_instance","—"),f"{f.get("type_ifc","—")}",
              f"{f.get('volume',0):.3f}", f"{f.get('surface_base',0):.3f}",
-             f"{f.get('hauteur',0):.2f}", f"{f.get('surface_coffrage_lateral',0):.3f}"]
+             f"{f.get('hauteur',0):.3f}",f"{f.get('perimetre',0):.3f}"]
             for f in fondations])
 
     def _remplir_poteaux(self, poteaux):
         self._fill_table(self.ui.table_poteaux, [
-            [p.get("nom","—"), p.get("section","—"), p.get("niveau","—"),
+            [p.get("nom","—"),p.get("etage","—"),p.get("materiau","—"),
              f"{p.get('hauteur',0):.2f}", f"{p.get('volume_net',0):.3f}",
-             f"{p.get('surface_coffrage',0):.3f}"] for p in poteaux])
+             f"{p.get('surface_section',0):.3f}"] for p in poteaux])
 
     def _remplir_toitures(self, toitures):
         self._fill_table(self.ui.table_toitures, [
             [t.get("nom_instance","—"), t.get("type_ifc","—"),
-             f"{t.get('surface_rampante',0):.3f}", f"{t.get('surface_projetee',0):.3f}",
-             f"{t.get('pente',0):.1f}"] for t in toitures])
+             f"{t.get('surface_horizontale',0):.3f}", f"{t.get('surface_reele',0):.3f}",
+             f"{t.get('pente_moyenne',0):.1f}"] for t in toitures])
 
     # ── Export PDF ────────────────────────────────────────────────────────────
 

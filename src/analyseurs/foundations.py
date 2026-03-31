@@ -47,3 +47,8 @@ def parse_foundations(model):
         donnees_fondations.append(info)
         
     return donnees_fondations
+
+
+# model=ifcopenshell.open("/home/mahan-samuel/Téléchargements/Test8.ifc")
+# data=parse_foundations(model)
+# print(data[3])
