@@ -1,226 +1,251 @@
 # src/ui_handlers/dashboard_handler.py
-from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
-from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-                                QPushButton, QLabel, QLineEdit, QFileDialog,
-                                QTableWidget, QTableWidgetItem, QHeaderView,
-                                QStackedWidget, QFrame, QProgressBar,
-                                QGraphicsOpacityEffect, QSizePolicy, QSpacerItem)
-from PySide6.QtGui import QPainter, QColor, QBrush, QPen, QFont
-from generated.ui_dashboard import Ui_DashboardWindow
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import session
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QPushButton, QTableWidget, QTableWidgetItem,
+    QHeaderView, QLineEdit, QFileDialog, QFrame,
+    QStackedWidget, QProgressBar, QSizePolicy
+)
+from PySide6.QtGui import QFont
 from src.base_de_donnees import get_projets_utilisateur, creer_projet
-import session 
 
+# ── Palette ──────────────────────────────────────────────────────────────────
+NAVY      = "#0D1117"
+NAVY2     = "#13191F"
+NAVY3     = "#1A2332"
+AMBER     = "#F5C842"
+AMBER2    = "#E8A020"
+WHITE     = "#FFFFFF"
+GREY1     = "#8892A4"
+GREY2     = "rgba(255,255,255,0.06)"
+DANGER    = "#E53E3E"
+SUCCESS   = "#38A169"
 
+STYLE = f"""
+QMainWindow, QWidget {{
+    background: {NAVY};
+    font-family: 'Segoe UI', sans-serif;
+}}
 
-SIDEBAR_STYLE = """
-QWidget#sidebar {
-    background: #0D1117;
+/* ── SIDEBAR ──────────────────────────────── */
+QWidget#sidebar {{
+    background: {NAVY2};
     border-right: 1px solid rgba(255,255,255,0.07);
-}
-QLabel#logo {
-    color: #F5C842;
-    font-family: 'Georgia';
-    font-size: 22px;
-    font-weight: bold;
-    letter-spacing: 4px;
-    padding: 0px 20px;
-}
-QLabel#logo_sub {
-    color: rgba(255,255,255,0.25);
-    font-size: 9px;
+}}
+QLabel#lbl_logo {{
+    color: {AMBER};
+    font-size: 17px;
+    font-weight: 900;
     letter-spacing: 3px;
-    padding: 0px 20px;
-}
-QLabel#user_name {
-    color: rgba(255,255,255,0.8);
+}}
+QWidget#user_card {{
+    background: {NAVY3};
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}}
+QLabel#lbl_avatar {{
+    background: {AMBER};
+    color: {NAVY};
+    border-radius: 20px;
     font-size: 13px;
     font-weight: bold;
-    padding: 0px 20px;
-}
-QLabel#user_role {
-    color: rgba(255,255,255,0.3);
+}}
+QLabel#lbl_username {{
+    color: {WHITE};
+    font-size: 13px;
+    font-weight: bold;
+}}
+QLabel#lbl_role {{
+    color: {GREY1};
+    font-size: 11px;
+}}
+QLabel#lbl_nav_section, QLabel#lbl_acct_section {{
+    color: rgba(255,255,255,0.25);
     font-size: 10px;
-    letter-spacing: 1px;
-    padding: 0px 20px;
-}
-QPushButton.nav_btn {
+    font-weight: bold;
+    letter-spacing: 2px;
+    padding-left: 24px;
+}}
+QPushButton#nav_btn {{
     background: transparent;
-    color: rgba(255,255,255,0.45);
+    color: {GREY1};
     border: none;
+    border-left: 3px solid transparent;
     text-align: left;
-    padding: 0px 20px;
-    min-height: 46px;
+    padding-left: 21px;
     font-size: 13px;
-    border-radius: 0px;
-}
-QPushButton.nav_btn:hover {
-    background: rgba(255,255,255,0.05);
-    color: rgba(255,255,255,0.85);
-}
-QPushButton.nav_btn:checked {
-    background: rgba(245,200,66,0.1);
-    color: #F5C842;
-    border-left: 3px solid #F5C842;
-}
-QPushButton#btn_deconnexion {
+    font-weight: 500;
+    min-height: 52px;
+}}
+QPushButton#nav_btn:hover {{
+    background: rgba(255,255,255,0.04);
+    color: {WHITE};
+}}
+QPushButton#nav_btn:checked {{
+    background: rgba(245,200,66,0.08);
+    color: {AMBER};
+    border-left: 3px solid {AMBER};
+    font-weight: bold;
+}}
+QPushButton#btn_logout {{
     background: transparent;
-    color: rgba(255,107,107,0.6);
+    color: {DANGER};
     border: none;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: 1px solid rgba(255,255,255,0.07);
     text-align: left;
-    padding: 0px 20px;
-    min-height: 46px;
+    padding-left: 24px;
     font-size: 13px;
-}
-QPushButton#btn_deconnexion:hover {
-    background: rgba(255,107,107,0.08);
-    color: #FF6B6B;
-}
-"""
+    min-height: 52px;
+}}
+QPushButton#btn_logout:hover {{
+    background: rgba(229,62,62,0.08);
+}}
 
-CONTENT_STYLE = """
-QWidget#content {
-    background: #0A0F14;
-}
-QLabel#page_title {
-    color: #FFFFFF;
+/* ── TOP BAR ──────────────────────────────── */
+QWidget#topbar {{
+    background: {NAVY2};
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+}}
+QLabel#lbl_page_title {{
+    color: {WHITE};
     font-size: 20px;
     font-weight: bold;
-    font-family: 'Georgia';
-}
-QLabel#greeting {
-    color: rgba(255,255,255,0.35);
-    font-size: 12px;
-    letter-spacing: 1px;
-}
-QWidget#stat_card {
-    background: #13191F;
+}}
+QLabel#lbl_greeting {{
+    color: {GREY1};
+    font-size: 13px;
+}}
+
+/* ── STAT CARDS ───────────────────────────── */
+QFrame#stat_card {{
+    background: {NAVY2};
     border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 16px;
-}
-QLabel#stat_number {
-    color: #F5C842;
+    border-radius: 14px;
+}}
+QLabel#stat_num {{
+    color: {AMBER};
     font-size: 36px;
+    font-weight: 900;
+}}
+QLabel#stat_lbl {{
+    color: {GREY1};
+    font-size: 11px;
+    letter-spacing: 1px;
+}}
+
+/* ── SECTION TITLES ───────────────────────── */
+QLabel#section_title {{
+    color: {WHITE};
+    font-size: 15px;
     font-weight: bold;
-}
-QLabel#stat_label {
-    color: rgba(255,255,255,0.4);
-    font-size: 10px;
-    letter-spacing: 2px;
-}
-QLabel#stat_icon {
-    color: rgba(245,200,66,0.25);
-    font-size: 28px;
-}
-QLabel#section_title {
-    color: rgba(255,255,255,0.7);
-    font-size: 12px;
-    font-weight: bold;
-    letter-spacing: 2px;
-}
-QTableWidget {
-    background: #13191F;
+}}
+
+/* ── TABLES ───────────────────────────────── */
+QTableWidget {{
+    background: {NAVY2};
     border: 1px solid rgba(255,255,255,0.07);
     border-radius: 12px;
-    gridline-color: rgba(255,255,255,0.05);
+    gridline-color: rgba(255,255,255,0.04);
     color: rgba(255,255,255,0.8);
     font-size: 13px;
-    selection-background-color: rgba(245,200,66,0.12);
-    selection-color: #FFFFFF;
     alternate-background-color: rgba(255,255,255,0.02);
-}
-QTableWidget::item { padding: 10px 14px; border: none; }
-QTableWidget::item:selected { background: rgba(245,200,66,0.12); color: #FFFFFF; }
-QHeaderView::section {
-    background: #0D1117;
-    color: rgba(255,255,255,0.35);
+    selection-background-color: rgba(245,200,66,0.1);
+    outline: none;
+}}
+QTableWidget::item {{ padding: 12px 16px; border: none; }}
+QTableWidget::item:selected {{ background: rgba(245,200,66,0.12); color: {WHITE}; }}
+QHeaderView::section {{
+    background: {NAVY};
+    color: rgba(255,255,255,0.3);
     font-weight: bold;
     font-size: 10px;
     letter-spacing: 2px;
-    padding: 10px 14px;
+    padding: 10px 16px;
     border: none;
     border-bottom: 1px solid rgba(255,255,255,0.07);
-}
-QLabel#form_title {
-    color: #FFFFFF;
-    font-size: 18px;
-    font-weight: bold;
-    font-family: 'Georgia';
-}
-QLabel#form_sub { color: rgba(255,255,255,0.35); font-size: 12px; }
-QLabel#field_label {
-    color: rgba(255,255,255,0.5);
-    font-size: 10px;
-    letter-spacing: 2px;
-    font-weight: bold;
-}
-QLineEdit {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 10px;
-    color: #FFFFFF;
-    font-size: 13px;
-    padding: 12px 16px;
-}
-QLineEdit:focus {
-    border: 1.5px solid #F5C842;
-    background: rgba(245,200,66,0.04);
-}
-QLineEdit:read-only {
+}}
+
+/* ── NEW PROJECT CARD ─────────────────────── */
+QFrame#project_card {{
+    background: {NAVY2};
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px;
+}}
+QLabel#form_label {{
     color: rgba(255,255,255,0.4);
-}
-QPushButton#btn_browse {
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}}
+QLabel#form_error {{
+    color: {DANGER};
+    font-size: 12px;
+}}
+QLineEdit {{
+    background: rgba(255,255,255,0.05);
+    color: {WHITE};
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 0 16px;
+    font-size: 14px;
+    min-height: 50px;
+    selection-background-color: {AMBER};
+    selection-color: {NAVY};
+}}
+QLineEdit:focus {{
+    border: 1px solid {AMBER};
+    background: rgba(245,200,66,0.05);
+}}
+QLineEdit[readOnly="true"] {{
+    color: {GREY1};
+}}
+QPushButton#btn_browse {{
     background: rgba(255,255,255,0.05);
     color: rgba(255,255,255,0.6);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
     font-size: 13px;
-    padding: 12px 20px;
+    font-weight: 600;
+    min-height: 50px;
     min-width: 130px;
-}
-QPushButton#btn_browse:hover {
-    background: rgba(255,255,255,0.09);
-    color: #FFFFFF;
-}
-QPushButton#btn_create {
+    padding: 0 16px;
+}}
+QPushButton#btn_browse:hover {{
+    border-color: {AMBER};
+    color: {AMBER};
+    background: rgba(245,200,66,0.05);
+}}
+QPushButton#btn_launch {{
     background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
-        stop:0 #F5C842, stop:1 #E8A020);
-    color: #0D1117;
+        stop:0 {AMBER}, stop:1 {AMBER2});
+    color: {NAVY};
     border: none;
-    border-radius: 12px;
-    font-size: 14px;
+    border-radius: 10px;
+    font-size: 15px;
     font-weight: bold;
-    min-height: 52px;
-}
-QPushButton#btn_create:hover {
+    min-height: 54px;
+}}
+QPushButton#btn_launch:hover {{
     background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
         stop:0 #FFD55A, stop:1 #F0B030);
-}
-QPushButton#btn_create:disabled {
-    background: rgba(255,255,255,0.08);
-    color: rgba(255,255,255,0.2);
-}
-QLabel#error_lbl {
-    color: #FF6B6B;
-    font-size: 12px;
-    background: rgba(255,107,107,0.1);
-    border: 1px solid rgba(255,107,107,0.25);
-    border-radius: 8px;
-    padding: 8px 14px;
-}
-QProgressBar {
-    background: rgba(255,255,255,0.06);
+}}
+QPushButton#btn_launch:disabled {{
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.25);
+}}
+QProgressBar {{
+    background: rgba(255,255,255,0.07);
     border: none;
-    border-radius: 6px;
-    height: 8px;
+    border-radius: 4px;
+    max-height: 6px;
     text-align: center;
-    color: transparent;
-}
-QProgressBar::chunk {
-    background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
-        stop:0 #F5C842, stop:1 #E8A020);
-    border-radius: 6px;
-}
+}}
+QProgressBar::chunk {{
+    background: {AMBER};
+    border-radius: 4px;
+}}
 """
 
 
@@ -230,6 +255,7 @@ class DashboardWindow(QMainWindow):
         self.utilisateur = utilisateur
         self.setWindowTitle("BATICALC — Tableau de bord")
         self.resize(1200, 760)
+        self.setStyleSheet(STYLE)
         self._build_ui()
         self.center()
         self._charger_donnees()
@@ -239,6 +265,8 @@ class DashboardWindow(QMainWindow):
         qr.moveCenter(self.screen().availableGeometry().center())
         self.move(qr.topLeft())
 
+    # ── Build UI ─────────────────────────────────────────────────────────────
+
     def _build_ui(self):
         central = QWidget()
         self.setCentralWidget(central)
@@ -246,356 +274,265 @@ class DashboardWindow(QMainWindow):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        # ═══════════════════════════════════════
-        #  SIDEBAR
-        # ═══════════════════════════════════════
+        root.addWidget(self._build_sidebar())
+        root.addWidget(self._build_content(), 1)
+
+    def _build_sidebar(self):
         sidebar = QWidget()
         sidebar.setObjectName("sidebar")
         sidebar.setFixedWidth(240)
-        sidebar.setStyleSheet(SIDEBAR_STYLE)
-        sv = QVBoxLayout(sidebar)
-        sv.setContentsMargins(0, 0, 0, 0)
-        sv.setSpacing(0)
+        v = QVBoxLayout(sidebar)
+        v.setContentsMargins(0, 0, 0, 0)
+        v.setSpacing(0)
 
         # Logo
-        sv.addSpacing(28)
-        logo = QLabel("BATICALC")
-        logo.setObjectName("logo")
-        sv.addWidget(logo)
-        logo_sub = QLabel("CALCULATEUR BIM")
-        logo_sub.setObjectName("logo_sub")
-        sv.addWidget(logo_sub)
+        logo_zone = QWidget()
+        logo_zone.setFixedHeight(72)
+        lz = QHBoxLayout(logo_zone)
+        lz.setContentsMargins(24, 0, 24, 0)
+        lbl_logo = QLabel("BATICALC")
+        lbl_logo.setObjectName("lbl_logo")
+        lz.addWidget(lbl_logo)
+        v.addWidget(logo_zone)
 
-        # Divider
-        sv.addSpacing(20)
-        div1 = QLabel()
-        div1.setFixedHeight(1)
-        div1.setStyleSheet("background: rgba(255,255,255,0.06); margin: 0px 20px;")
-        sv.addWidget(div1)
-        sv.addSpacing(20)
+        # User card
+        self.user_card = QWidget()
+        self.user_card.setObjectName("user_card")
+        self.user_card.setFixedHeight(72)
+        uc = QHBoxLayout(self.user_card)
+        uc.setContentsMargins(20, 0, 20, 0)
+        uc.setSpacing(12)
+        self.lbl_avatar = QLabel("U")
+        self.lbl_avatar.setObjectName("lbl_avatar")
+        self.lbl_avatar.setFixedSize(40, 40)
+        self.lbl_avatar.setAlignment(Qt.AlignCenter)
+        uc.addWidget(self.lbl_avatar)
+        name_col = QVBoxLayout()
+        name_col.setSpacing(2)
+        self.lbl_username = QLabel("Utilisateur")
+        self.lbl_username.setObjectName("lbl_username")
+        self.lbl_role = QLabel("Ingenieur BIM")
+        self.lbl_role.setObjectName("lbl_role")
+        name_col.addWidget(self.lbl_username)
+        name_col.addWidget(self.lbl_role)
+        uc.addLayout(name_col)
+        v.addWidget(self.user_card)
 
-        # User info
-        self.lbl_user = QLabel("")
-        self.lbl_user.setObjectName("user_name")
-        sv.addWidget(self.lbl_user)
-        role_lbl = QLabel("UTILISATEUR")
-        role_lbl.setObjectName("user_role")
-        sv.addWidget(role_lbl)
-
-        sv.addSpacing(24)
-        div2 = QLabel()
-        div2.setFixedHeight(1)
-        div2.setStyleSheet("background: rgba(255,255,255,0.06); margin: 0px 20px;")
-        sv.addWidget(div2)
-        sv.addSpacing(8)
+        # Nav label
+        lbl_nav = QLabel("NAVIGATION")
+        lbl_nav.setObjectName("lbl_nav_section")
+        lbl_nav.setFixedHeight(36)
+        v.addWidget(lbl_nav)
 
         # Nav buttons
-        nav_items = [
-            ("btn_nav_dash",   "  Tableau de bord"),
-            ("btn_nav_proj",   "  Mes projets"),
-            ("btn_nav_new",    "  Nouveau projet"),
-        ]
-        self.nav_btns = []
-        for name, label in nav_items:
-            btn = QPushButton(label)
-            btn.setProperty("class", "nav_btn")
-            btn.setObjectName(name)
-            btn.setStyleSheet(SIDEBAR_STYLE)
-            btn.setCheckable(True)
-            btn.setCursor(Qt.PointingHandCursor)
-            sv.addWidget(btn)
-            self.nav_btns.append(btn)
+        self.btn_nav_dash    = self._nav_btn("  Tableau de bord", checked=True)
+        self.btn_nav_projets = self._nav_btn("  Mes projets")
+        self.btn_nav_nouveau = self._nav_btn("  + Nouveau projet")
+        v.addWidget(self.btn_nav_dash)
+        v.addWidget(self.btn_nav_projets)
+        v.addWidget(self.btn_nav_nouveau)
 
-        sv.addStretch()
+        v.addStretch()
 
-        self.btn_deconnexion = QPushButton("  Déconnexion")
-        self.btn_deconnexion.setObjectName("btn_deconnexion")
-        self.btn_deconnexion.setStyleSheet(SIDEBAR_STYLE)
-        self.btn_deconnexion.setCursor(Qt.PointingHandCursor)
-        sv.addWidget(self.btn_deconnexion)
-        sv.addSpacing(16)
+        # Account label + logout
+        lbl_acct = QLabel("COMPTE")
+        lbl_acct.setObjectName("lbl_acct_section")
+        lbl_acct.setFixedHeight(36)
+        v.addWidget(lbl_acct)
+        self.btn_logout = QPushButton("  Deconnexion")
+        self.btn_logout.setObjectName("btn_logout")
+        self.btn_logout.setCursor(Qt.PointingHandCursor)
+        v.addWidget(self.btn_logout)
+        v.addSpacing(8)
 
-        root.addWidget(sidebar)
+        # Connect nav
+        self.btn_nav_dash.clicked.connect(
+            lambda: self._naviguer(0, "Tableau de bord", self.btn_nav_dash))
+        self.btn_nav_projets.clicked.connect(
+            lambda: self._naviguer(1, "Mes projets", self.btn_nav_projets))
+        self.btn_nav_nouveau.clicked.connect(
+            lambda: self._naviguer(2, "Nouveau projet", self.btn_nav_nouveau))
+        self.btn_logout.clicked.connect(self.on_deconnexion)
 
-        # ═══════════════════════════════════════
-        #  CONTENT AREA
-        # ═══════════════════════════════════════
+        return sidebar
+
+    def _nav_btn(self, text, checked=False):
+        btn = QPushButton(text)
+        btn.setObjectName("nav_btn")
+        btn.setCheckable(True)
+        btn.setChecked(checked)
+        btn.setCursor(Qt.PointingHandCursor)
+        return btn
+
+    def _build_content(self):
         content = QWidget()
-        content.setObjectName("content")
-        content.setStyleSheet(CONTENT_STYLE)
-        cv = QVBoxLayout(content)
-        cv.setContentsMargins(0, 0, 0, 0)
-        cv.setSpacing(0)
+        v = QVBoxLayout(content)
+        v.setContentsMargins(0, 0, 0, 0)
+        v.setSpacing(0)
 
         # Top bar
         topbar = QWidget()
-        topbar.setStyleSheet("background: #0D1117; border-bottom: 1px solid rgba(255,255,255,0.06);")
-        topbar.setFixedHeight(64)
+        topbar.setObjectName("topbar")
+        topbar.setFixedHeight(72)
         tb = QHBoxLayout(topbar)
         tb.setContentsMargins(32, 0, 32, 0)
         self.lbl_page_title = QLabel("Tableau de bord")
-        self.lbl_page_title.setObjectName("page_title")
+        self.lbl_page_title.setObjectName("lbl_page_title")
+        self.lbl_greeting = QLabel("Bonjour !")
+        self.lbl_greeting.setObjectName("lbl_greeting")
         tb.addWidget(self.lbl_page_title)
         tb.addStretch()
-        self.lbl_greeting = QLabel("")
-        self.lbl_greeting.setObjectName("greeting")
         tb.addWidget(self.lbl_greeting)
-        cv.addWidget(topbar)
+        v.addWidget(topbar)
 
-        # Stacked pages
+        # Stacked widget
         self.stack = QStackedWidget()
-        self.stack.setStyleSheet("background: #0A0F14;")
-        cv.addWidget(self.stack)
+        self.stack.addWidget(self._build_page_dashboard())
+        self.stack.addWidget(self._build_page_projets())
+        self.stack.addWidget(self._build_page_nouveau())
+        v.addWidget(self.stack)
 
-        self._build_page_dashboard()
-        self._build_page_projects()
-        self._build_page_new()
+        return content
 
-        root.addWidget(content)
+    # ── Pages ─────────────────────────────────────────────────────────────────
 
-        # Connections
-        self.nav_btns[0].clicked.connect(lambda: self._nav(0, "Tableau de bord", 0))
-        self.nav_btns[1].clicked.connect(lambda: self._nav(1, "Mes projets", 1))
-        self.nav_btns[2].clicked.connect(lambda: self._nav(2, "Nouveau projet", 2))
-        self.btn_deconnexion.clicked.connect(self.on_deconnexion)
-        self.nav_btns[0].setChecked(True)
-
-    # ─── Page: Dashboard ──────────────────────────────────
     def _build_page_dashboard(self):
         page = QWidget()
         v = QVBoxLayout(page)
-        v.setContentsMargins(32, 32, 32, 32)
-        v.setSpacing(0)
+        v.setContentsMargins(32, 28, 32, 32)
+        v.setSpacing(24)
 
-        # Stats row
-        stats_row = QHBoxLayout()
-        stats_row.setSpacing(20)
-        self.lbl_nb_projets   = self._stat_card(stats_row, "0", "PROJETS",    "◈")
-        self.lbl_nb_ifc       = self._stat_card(stats_row, "0", "FICHIERS IFC","◉")
-        self.lbl_nb_analyses  = self._stat_card(stats_row, "0", "ANALYSES",   "◆")
-        v.addLayout(stats_row)
+        # Stat cards row
+        cards_row = QHBoxLayout()
+        cards_row.setSpacing(16)
+        self.stat_projets  = self._stat_card(cards_row, "0", "PROJETS TOTAL")
+        self.stat_ifc      = self._stat_card(cards_row, "0", "FICHIERS IFC")
+        self.stat_analyses = self._stat_card(cards_row, "0", "ANALYSES")
+        v.addLayout(cards_row)
 
-        v.addSpacing(32)
+        # Recent projects title
+        lbl = QLabel("Projets recents")
+        lbl.setObjectName("section_title")
+        v.addWidget(lbl)
 
-        sec = QLabel("PROJETS RÉCENTS")
-        sec.setObjectName("section_title")
-        v.addWidget(sec)
-        v.addSpacing(12)
-
+        # Recent table
         self.table_recents = self._make_table(["Nom du projet", "Fichier IFC", "Statut", "Date"])
         v.addWidget(self.table_recents)
 
-        self.stack.addWidget(page)
+        return page
 
-    def _stat_card(self, layout, num, label, icon):
-        card = QWidget()
-        card.setObjectName("stat_card")
-        card.setMinimumHeight(120)
-        ch = QHBoxLayout(card)
-        ch.setContentsMargins(24, 20, 24, 20)
-
-        left_v = QVBoxLayout()
-        left_v.setSpacing(4)
-        num_lbl = QLabel(num)
-        num_lbl.setObjectName("stat_number")
-        lbl_lbl = QLabel(label)
-        lbl_lbl.setObjectName("stat_label")
-        left_v.addWidget(num_lbl)
-        left_v.addWidget(lbl_lbl)
-        left_v.addStretch()
-        ch.addLayout(left_v)
-        ch.addStretch()
-
-        icon_lbl = QLabel(icon)
-        icon_lbl.setObjectName("stat_icon")
-        ch.addWidget(icon_lbl, alignment=Qt.AlignRight | Qt.AlignVCenter)
-
-        layout.addWidget(card)
-        return num_lbl
-
-    # ─── Page: Projects ───────────────────────────────────
-    def _build_page_projects(self):
+    def _build_page_projets(self):
         page = QWidget()
         v = QVBoxLayout(page)
-        v.setContentsMargins(32, 32, 32, 32)
-
-        sec = QLabel("TOUS MES PROJETS")
-        sec.setObjectName("section_title")
-        v.addWidget(sec)
-        v.addSpacing(12)
-
-        self.table_projets = self._make_table(["Nom du projet", "Fichier IFC", "Statut", "Date de création"])
+        v.setContentsMargins(32, 28, 32, 32)
+        v.setSpacing(16)
+        lbl = QLabel("Tous mes projets")
+        lbl.setObjectName("section_title")
+        v.addWidget(lbl)
+        self.table_projets = self._make_table(["Nom du projet", "Fichier IFC", "Statut", "Date"])
         v.addWidget(self.table_projets)
+        return page
 
-        self.stack.addWidget(page)
-
-    # ─── Page: New Project ────────────────────────────────
-    def _build_page_new(self):
+    def _build_page_nouveau(self):
         page = QWidget()
-        outer = QHBoxLayout(page)
-        outer.setContentsMargins(32, 32, 32, 32)
+        outer = QVBoxLayout(page)
+        outer.setContentsMargins(32, 28, 32, 32)
+        outer.setSpacing(0)
 
-        # Centered form card
-        card = QWidget()
-        card.setFixedWidth(560)
-        card.setStyleSheet("""
-            QWidget {
-                background: #13191F;
-                border: 1px solid rgba(255,255,255,0.07);
-                border-radius: 20px;
-            }
-        """)
-        fv = QVBoxLayout(card)
-        fv.setContentsMargins(40, 40, 40, 40)
-        fv.setSpacing(0)
+        card = QFrame()
+        card.setObjectName("project_card")
+        card.setMaximumWidth(660)
+        cv = QVBoxLayout(card)
+        cv.setContentsMargins(40, 36, 40, 36)
+        cv.setSpacing(0)
 
-        form_title = QLabel("Nouveau projet")
-        form_title.setObjectName("form_title")
-        form_title.setStyleSheet("color: #FFFFFF; font-size: 18px; font-weight: bold; font-family: Georgia; background: transparent; border: none;")
-        fv.addWidget(form_title)
+        # Title
+        lbl_title = QLabel("Nouveau projet d'analyse")
+        lbl_title.setObjectName("section_title")
+        cv.addWidget(lbl_title)
+        cv.addSpacing(4)
+        lbl_sub = QLabel("Importez un fichier IFC pour demarrer l'analyse automatique.")
+        lbl_sub.setStyleSheet(f"color: {GREY1}; font-size: 13px;")
+        lbl_sub.setWordWrap(True)
+        cv.addWidget(lbl_sub)
+        cv.addSpacing(28)
 
-        form_sub = QLabel("Importez un fichier IFC pour démarrer l'analyse")
-        form_sub.setStyleSheet("color: rgba(255,255,255,0.35); font-size: 12px; background: transparent; border: none;")
-        fv.addSpacing(6)
-        fv.addWidget(form_sub)
-
-        fv.addSpacing(8)
-        sep = QLabel()
-        sep.setFixedHeight(1)
-        sep.setStyleSheet("background: rgba(255,255,255,0.07); border: none;")
-        fv.addWidget(sep)
-        fv.addSpacing(28)
-
-        # Nom
+        # Project name
         lbl_nom = QLabel("NOM DU PROJET")
-        lbl_nom.setStyleSheet("color: rgba(255,255,255,0.5); font-size: 10px; letter-spacing: 2px; font-weight: bold; background: transparent; border: none;")
-        fv.addWidget(lbl_nom)
-        fv.addSpacing(8)
+        lbl_nom.setObjectName("form_label")
+        cv.addWidget(lbl_nom)
+        cv.addSpacing(8)
         self.input_nom_projet = QLineEdit()
-        self.input_nom_projet.setPlaceholderText("Ex: Bâtiment A — Fondations")
-        self.input_nom_projet.setStyleSheet("""
-            QLineEdit {
-                background: rgba(255,255,255,0.04);
-                border: 1px solid rgba(255,255,255,0.1);
-                border-radius: 10px;
-                color: #FFFFFF;
-                font-size: 13px;
-                padding: 12px 16px;
-            }
-            QLineEdit:focus {
-                border: 1.5px solid #F5C842;
-                background: rgba(245,200,66,0.04);
-            }
-        """)
-        fv.addWidget(self.input_nom_projet)
+        self.input_nom_projet.setPlaceholderText("Ex: Batiment A — Fondations RDC")
+        self.input_nom_projet.setFocusPolicy(Qt.StrongFocus)
+        cv.addWidget(self.input_nom_projet)
+        cv.addSpacing(20)
 
-        fv.addSpacing(22)
-
-        # Fichier IFC
+        # IFC path
         lbl_ifc = QLabel("FICHIER IFC")
-        lbl_ifc.setStyleSheet("color: rgba(255,255,255,0.5); font-size: 10px; letter-spacing: 2px; font-weight: bold; background: transparent; border: none;")
-        fv.addWidget(lbl_ifc)
-        fv.addSpacing(8)
-
+        lbl_ifc.setObjectName("form_label")
+        cv.addWidget(lbl_ifc)
+        cv.addSpacing(8)
         ifc_row = QHBoxLayout()
-        ifc_row.setSpacing(10)
+        ifc_row.setSpacing(12)
         self.input_chemin_ifc = QLineEdit()
+        self.input_chemin_ifc.setPlaceholderText("Aucun fichier selectionne...")
         self.input_chemin_ifc.setReadOnly(True)
-        self.input_chemin_ifc.setPlaceholderText("Sélectionnez un fichier .ifc...")
-        self.input_chemin_ifc.setStyleSheet("""
-            QLineEdit {
-                background: rgba(255,255,255,0.03);
-                border: 1px solid rgba(255,255,255,0.08);
-                border-radius: 10px;
-                color: rgba(255,255,255,0.45);
-                font-size: 13px;
-                padding: 12px 16px;
-            }
-        """)
+        self.input_chemin_ifc.setFocusPolicy(Qt.StrongFocus)
         self.btn_parcourir = QPushButton("Parcourir")
         self.btn_parcourir.setObjectName("btn_browse")
-        self.btn_parcourir.setStyleSheet("""
-            QPushButton {
-                background: rgba(255,255,255,0.05);
-                color: rgba(255,255,255,0.6);
-                border: 1px solid rgba(255,255,255,0.12);
-                border-radius: 10px;
-                font-size: 13px;
-                padding: 12px 20px;
-                min-width: 110px;
-            }
-            QPushButton:hover {
-                background: rgba(255,255,255,0.09);
-                color: #FFFFFF;
-            }
-        """)
         self.btn_parcourir.setCursor(Qt.PointingHandCursor)
         ifc_row.addWidget(self.input_chemin_ifc)
         ifc_row.addWidget(self.btn_parcourir)
-        fv.addLayout(ifc_row)
+        cv.addLayout(ifc_row)
+        cv.addSpacing(10)
 
-        fv.addSpacing(14)
+        # Error label
+        self.lbl_erreur = QLabel("")
+        self.lbl_erreur.setObjectName("form_error")
+        self.lbl_erreur.setWordWrap(True)
+        cv.addWidget(self.lbl_erreur)
+        cv.addSpacing(24)
 
-        self.lbl_np_erreur = QLabel("")
-        self.lbl_np_erreur.setStyleSheet("color: #FF6B6B; font-size: 12px; background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.25); border-radius: 8px; padding: 8px 14px;")
-        self.lbl_np_erreur.hide()
-        fv.addWidget(self.lbl_np_erreur)
-
-        fv.addSpacing(28)
-
-        self.btn_creer_projet = QPushButton("Analyser le fichier IFC →")
-        self.btn_creer_projet.setObjectName("btn_create")
-        self.btn_creer_projet.setStyleSheet("""
-            QPushButton {
-                background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
-                    stop:0 #F5C842, stop:1 #E8A020);
-                color: #0D1117;
-                border: none;
-                border-radius: 12px;
-                font-size: 14px;
-                font-weight: bold;
-                min-height: 52px;
-            }
-            QPushButton:hover {
-                background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
-                    stop:0 #FFD55A, stop:1 #F0B030);
-            }
-            QPushButton:disabled {
-                background: rgba(255,255,255,0.08);
-                color: rgba(255,255,255,0.2);
-            }
-        """)
+        # Launch button
+        self.btn_creer_projet = QPushButton("Lancer l'analyse  →")
+        self.btn_creer_projet.setObjectName("btn_launch")
         self.btn_creer_projet.setCursor(Qt.PointingHandCursor)
-        fv.addWidget(self.btn_creer_projet)
+        cv.addWidget(self.btn_creer_projet)
+        cv.addSpacing(16)
 
-        fv.addSpacing(16)
-
+        # Progress bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setValue(0)
-        self.progress_bar.setFixedHeight(6)
-        self.progress_bar.setStyleSheet("""
-            QProgressBar {
-                background: rgba(255,255,255,0.06);
-                border: none;
-                border-radius: 3px;
-            }
-            QProgressBar::chunk {
-                background: qlineargradient(x1:0,y1:0,x2:1,y2:0,
-                    stop:0 #F5C842, stop:1 #E8A020);
-                border-radius: 3px;
-            }
-        """)
-        fv.addWidget(self.progress_bar)
-        fv.addStretch()
+        self.progress_bar.setTextVisible(False)
+        cv.addWidget(self.progress_bar)
 
-        outer.addStretch()
-        outer.addWidget(card, alignment=Qt.AlignVCenter)
+        outer.addWidget(card)
         outer.addStretch()
 
-        self.stack.addWidget(page)
-
+        # Connections
         self.btn_parcourir.clicked.connect(self.on_parcourir)
         self.btn_creer_projet.clicked.connect(self.on_creer_projet)
+
+        return page
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _stat_card(self, layout, num, label):
+        card = QFrame()
+        card.setObjectName("stat_card")
+        card.setMinimumHeight(110)
+        cv = QVBoxLayout(card)
+        cv.setContentsMargins(24, 20, 24, 20)
+        cv.setSpacing(4)
+        num_lbl = QLabel(num)
+        num_lbl.setObjectName("stat_num")
+        lbl_lbl = QLabel(label)
+        lbl_lbl.setObjectName("stat_lbl")
+        cv.addWidget(num_lbl)
+        cv.addWidget(lbl_lbl)
+        layout.addWidget(card)
+        return num_lbl   # return the label so we can update it
 
     def _make_table(self, headers):
         t = QTableWidget()
@@ -605,101 +542,103 @@ class DashboardWindow(QMainWindow):
         t.setSelectionBehavior(QTableWidget.SelectRows)
         t.setAlternatingRowColors(True)
         t.verticalHeader().setVisible(False)
-        t.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        for i in range(1, len(headers)):
-            t.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
         t.setShowGrid(False)
+        t.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
+        t.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        for i in range(2, len(headers)):
+            t.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeToContents)
         return t
 
-    def _nav(self, btn_idx, title, page_idx):
-        for i, b in enumerate(self.nav_btns):
-            b.setChecked(i == btn_idx)
-        self.lbl_page_title.setText(title)
-        self.stack.setCurrentIndex(page_idx)
-        if page_idx == 1:
-            self._actualiser_projets()
+    # ── Data loading ──────────────────────────────────────────────────────────
 
     def _charger_donnees(self):
         nom = self.utilisateur.get("nom", "Utilisateur")
-        self.lbl_user.setText(nom)
-        self.lbl_greeting.setText(f"Bonjour, {nom}  ✦")
+        initiales = "".join(p[0].upper() for p in nom.split()[:2]) or "U"
+        self.lbl_avatar.setText(initiales)
+        self.lbl_username.setText(nom)
+        self.lbl_greeting.setText(f"Bonjour, {nom.split()[0]} !")
         self._actualiser_projets()
+
+    def _naviguer(self, index, titre, btn_actif):
+        for b in [self.btn_nav_dash, self.btn_nav_projets, self.btn_nav_nouveau]:
+            b.setChecked(False)
+        btn_actif.setChecked(True)
+        self.stack.setCurrentIndex(index)
+        self.lbl_page_title.setText(titre)
+        if index == 1:
+            self._actualiser_projets()
 
     def _actualiser_projets(self):
         projets = get_projets_utilisateur(self.utilisateur["id"])
-        self.lbl_nb_projets.setText(str(len(projets)))
-        self.lbl_nb_ifc.setText(str(sum(1 for p in projets if p.get("chemin_ifc"))))
-        self.lbl_nb_analyses.setText(str(sum(1 for p in projets if p.get("statut") == "termine")))
+        self.stat_projets.setText(str(len(projets)))
+        self.stat_ifc.setText(str(sum(1 for p in projets if p.get("chemin_ifc"))))
+        self.stat_analyses.setText(str(sum(1 for p in projets if p.get("statut") == "termine")))
 
         for table in [self.table_recents, self.table_projets]:
             table.setRowCount(0)
             for p in projets:
                 row = table.rowCount()
                 table.insertRow(row)
+                table.setRowHeight(row, 48)
                 table.setItem(row, 0, QTableWidgetItem(p.get("nom", "")))
                 ifc = p.get("chemin_ifc") or "—"
-                table.setItem(row, 1, QTableWidgetItem(ifc.split("\\")[-1].split("/")[-1]))
-                statut = p.get("statut", "")
-                statut_item = QTableWidgetItem(statut)
-                if statut == "termine":
-                    statut_item.setForeground(QColor("#2ECC71"))
-                elif statut == "en_cours":
-                    statut_item.setForeground(QColor("#F5C842"))
-                else:
-                    statut_item.setForeground(QColor("#888888"))
-                table.setItem(row, 2, statut_item)
-                table.setItem(row, 3, QTableWidgetItem(str(p.get("cree_le", ""))[:10]))
+                table.setItem(row, 1, QTableWidgetItem(
+                    ifc.split("\\")[-1].split("/")[-1]))
+                statut = p.get("statut", "en_attente").replace("_", " ").capitalize()
+                table.setItem(row, 2, QTableWidgetItem(statut))
+                table.setItem(row, 3, QTableWidgetItem(
+                    p.get("cree_le", "")[:10]))
+
+    # ── Actions ───────────────────────────────────────────────────────────────
 
     def on_parcourir(self):
         chemin, _ = QFileDialog.getOpenFileName(
-            self, "Sélectionner un fichier IFC", "", "Fichiers IFC (*.ifc);;Tous (*)")
+            self, "Selectionner un fichier IFC",
+            "", "Fichiers IFC (*.ifc);;Tous les fichiers (*)")
         if chemin:
             self.input_chemin_ifc.setText(chemin)
 
     def on_creer_projet(self):
-        nom = self.ui.input_nom_projet.text().strip()
-        chemin = self.ui.input_chemin_ifc.text().strip()
-        
-        if not nom or not chemin:
-            msg = "Veuillez saisir un nom." if not nom else "Veuillez sélectionner un fichier IFC."
-            self.ui.label_np_erreur.setText(msg)
+        nom    = self.input_nom_projet.text().strip()
+        chemin = self.input_chemin_ifc.text().strip()
+
+        if not nom:
+            self.lbl_erreur.setText("Veuillez saisir un nom de projet.")
+            return
+        if not chemin:
+            self.lbl_erreur.setText("Veuillez selectionner un fichier IFC.")
             return
 
-        self.ui.label_np_erreur.setText("")
-        self.ui.progress_bar.setValue(40)
-        self.ui.btn_creer_projet.setEnabled(False)
+        self.lbl_erreur.setText("")
+        self.progress_bar.setValue(40)
+        self.btn_creer_projet.setEnabled(False)
 
-        # Appel de la logique métier
         res = creer_projet(self.utilisateur["id"], nom, chemin)
+        self.progress_bar.setValue(100)
+        self.btn_creer_projet.setEnabled(True)
 
         if res["succes"]:
-            # Mise à jour de la session globale
-            session.projet_actuel.update({
-                "id": res["projet_id"],
-                "nom": nom,
-                "chemin": chemin,
-                "actif": True
-            })
+            # Update session so parseurIfc knows the current project id
+            session.projet_actuel["id"]     = res["projet_id"]
+            session.projet_actuel["nom"]    = nom
+            session.projet_actuel["chemin"] = chemin
+            session.projet_actuel["actif"]  = True
 
-            # Nettoyage
-            self.ui.input_nom_projet.clear()
-            self.ui.input_chemin_ifc.clear()
-            self.ui.progress_bar.setValue(0)
-            self.ui.btn_creer_projet.setEnabled(True)
+            self.input_nom_projet.clear()
+            self.input_chemin_ifc.clear()
+            self.progress_bar.setValue(0)
 
-            # Transition
             from src.ui_handlers.results_handler import ResultsWindow
             self.results = ResultsWindow(
-                chemin_ifc=chemin, nom_projet=nom,
-                utilisateur=self.utilisateur, dashboard_ref=self
+                chemin_ifc=chemin,
+                nom_projet=nom,
+                utilisateur=self.utilisateur,
+                dashboard_ref=self
             )
             self.results.show()
             self.hide()
         else:
-            # En cas d'échec
-            self.ui.label_np_erreur.setText(f"Erreur : {res['erreur']}")
-            self.ui.btn_creer_projet.setEnabled(True)
-            self.ui.progress_bar.setValue(0) # Reset car l'opération a échoué
+            self.lbl_erreur.setText(res["erreur"])
 
     def on_deconnexion(self):
         from src.ui_handlers.welcome_handler import WelcomeWindow
