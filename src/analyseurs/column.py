@@ -39,9 +39,15 @@ def parse_columns(model):
             "hauteur": round(qto.get("Length", 0), 2),        # Pour le coffrage linéaire
             "surface_section": round(qto.get("CrossSectionArea", 0), 3),
             "volume_net": round(qto.get("NetVolume", 0), 3),  # Pour la commande de béton
-            "poids_estime_kg": round(qto.get("NetVolume", 0) * 2500, 0) # Base 2500kg/m3
+            # "poids_estime_kg": round(qto.get("NetVolume", 0) * 2500, 0) # Base 2500kg/m3
         }
 
         donnees_poteaux.append(info)
 
     return donnees_poteaux
+
+
+# chemin_fichier="/home/mahan-samuel/Téléchargements/Test8.ifc"
+# model = ifcopenshell.open(chemin_fichier)
+# data=parse_columns(model)
+# print(data[3])    

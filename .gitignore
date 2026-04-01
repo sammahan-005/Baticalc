@@ -1,1 +1,3 @@
 data/*.db
+src/__pycache__/
+nom_du_nouvel_environnement/
