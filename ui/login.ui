@@ -1,0 +1,64 @@
+<ui version="4.0">
+ <class>LoginWindow</class>
+ <widget class="QMainWindow" name="LoginWindow">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>480</width><height>520</height></rect></property>
+  <property name="windowTitle"><string>BATICALC - Connexion</string></property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QLabel" name="label_title">
+      <property name="text"><string>&lt;h1&gt;BATICALC&lt;/h1&gt;</string></property>
+      <property name="alignment"><set>Qt::AlignCenter</set></property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="label_subtitle">
+      <property name="text"><string>Connexion a votre compte</string></property>
+      <property name="alignment"><set>Qt::AlignCenter</set></property>
+     </widget>
+    </item>
+    <item><widget class="QLabel" name="label_email"><property name="text"><string>Email</string></property></widget></item>
+    <item>
+     <widget class="QLineEdit" name="input_email">
+      <property name="minimumSize"><size><width>0</width><height>45</height></size></property>
+      <property name="placeholderText"><string>Entrez votre email</string></property>
+     </widget>
+    </item>
+    <item><widget class="QLabel" name="label_password"><property name="text"><string>Mot de passe</string></property></widget></item>
+    <item>
+     <widget class="QLineEdit" name="input_password">
+      <property name="minimumSize"><size><width>0</width><height>45</height></size></property>
+      <property name="placeholderText"><string>Entrez votre mot de passe</string></property>
+      <property name="echoMode"><enum>QLineEdit::Password</enum></property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="label_error">
+      <property name="text"><string></string></property>
+      <property name="alignment"><set>Qt::AlignCenter</set></property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="btn_login">
+      <property name="minimumSize"><size><width>0</width><height>50</height></size></property>
+      <property name="text"><string>Se connecter</string></property>
+     </widget>
+    </item>
+    <item><widget class="QLabel" name="label_sep"><property name="text"><string>Pas encore de compte ?</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+    <item>
+     <widget class="QPushButton" name="btn_goto_register">
+      <property name="minimumSize"><size><width>0</width><height>50</height></size></property>
+      <property name="text"><string>Creer un compte</string></property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="btn_back">
+      <property name="minimumSize"><size><width>0</width><height>35</height></size></property>
+      <property name="text"><string>Retour</string></property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/><connections/>
+</ui>
