@@ -3,7 +3,7 @@ import sys
 import os
 from src.configuration import DB_PATH
 from src.analyseurs import analyseurIfc, walls, foundations, column, roof
-from src.base_de_donnees import sauvegarder_murs, sauvegarder_fondations, sauvegarder_poteaux, sauvegarder_toitures, sauvegarder_resultats_ifc
+from src.base_de_donnees import sauvegarder_murs, sauvegarder_fondations, sauvegarder_poteaux, sauvegarder_toitures
 import session
 
 
