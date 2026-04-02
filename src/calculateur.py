@@ -2,9 +2,9 @@ import sqlite3
 import math
 import sys
 import os
-from ..base_de_donnees import get_connection
-from src.configuration import DB_PATH
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from base_de_donnees import get_connection
+
+
 
 
 def calculer_quantites_fondations(projet_id, ratio_acier=90):
@@ -33,8 +33,6 @@ def calculer_quantites_fondations(projet_id, ratio_acier=90):
     }
 
 
-
-
 def calculer_quantites_elevations( projet_id):
     """
     Calcule les quantités pour les élévations (Murs et Cloisons).
@@ -60,8 +58,6 @@ def calculer_quantites_elevations( projet_id):
         "Peinture (m2)": round(surface_totale * 2, 2)
     }
 
-   
-
 def calculer_quantites_structure( projet_id, ratio_acier=135):
     """
     Calcule les quantités pour la structure (Poteaux / Colonnes).
@@ -71,7 +67,7 @@ def calculer_quantites_structure( projet_id, ratio_acier=135):
     cursor = conn.cursor()
     cursor.execute("""
         SELECT 
-            COALESCE(volume_net, 0.0),    
+            COALESCE(volume_net, 0.0), 
             COALESCE(surface_section, 0.0), 
             COALESCE(hauteur, 0.0)
         FROM poteaux
@@ -120,15 +116,14 @@ def generer_synthese_projet( projet_id):
 
     conn= get_connection()
     return {
-        "Fondations": calculer_quantites_fondations( projet_id),
-        "Elevations": calculer_quantites_elevations( projet_id),
-        "Structure": calculer_quantites_structure( projet_id),
-        "Toiture": calculer_quantites_toiture( projet_id)
+        "Fondations": calculer_quantites_fondations(conn, projet_id),
+        "Elevations": calculer_quantites_elevations(conn, projet_id),
+        "Structure": calculer_quantites_structure(conn, projet_id),
+        "Toiture": calculer_quantites_toiture(conn, projet_id)
     }
 
-# data = generer_synthese_projet(1)
-
-
+data = generer_synthese_projet(1)
+print(data)    
 
 
 def convertir_en_materiaux_et_estimer(synthese_quantites, prix_ref):
@@ -193,21 +188,3 @@ def convertir_en_materiaux_et_estimer(synthese_quantites, prix_ref):
         "Devis Détaillé": devis_detaille,
         "Coût Total Matériaux": round(cout_total, 2)
     }    
-
-
-# result = convertir_en_materiaux_et_estimer(data, prix_ref = [
-#         # (materiau, prix, unite)
-#         ("Sacs ciment 50kg",         5000,    "sac"),
-#         ("Sable (m3)",               25000,   "m3"),
-#         ("Gravier (m3)",             30000,   "m3"),
-#         ("Sable fin (m3)",           25000,   "m3"),
-#         ("Barres HA06 (6m)",         1200,    "barre"),
-#         ("Barres HA08 (12m)",        3000,    "barre"),
-#         ("Barres HA10 (12m)",        4200,    "barre"),
-#         ("Barres HA12 (12m)",        5500,    "barre"),
-#         ("Parpaings 20x20x40",       350,     "parpaing"),
-#         ("Bac acier / couverture",   8000,    "m2"),
-#         ("Bois charpente (m3)",      180000,  "m3"),
-#         ("Clous / visserie (kg)",    1500,    "kg"),
-#     ])
-# print(result)
