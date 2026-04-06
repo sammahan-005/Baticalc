@@ -165,7 +165,8 @@ def _section_devis(devis_detail: dict, cout_total: float, s) -> list:
 
     # Style de base
     style_cmds = [
-        ("BACKGROUND",    (0, 0),  (-1, 0),             GRIS_CLAIR),
+        ("BACKGROUND",    (0, 0),  (-1, 0),             BLEU_MID),
+        ("TEXTCOLOR",     (0, 0),  (-1, 0),             BLANC),
         ("ROWBACKGROUNDS",(0, 1),  (-1, total_row_idx-1), [BLANC, GRIS_CLAIR]),
         ("GRID",          (0, 0),  (-1, -1),             0.4, GRIS_MID),
         ("TOPPADDING",    (0, 0),  (-1, -1),             4),

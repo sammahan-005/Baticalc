@@ -126,9 +126,6 @@ def generer_synthese_projet( projet_id):
         "Toiture": calculer_quantites_toiture( projet_id)
     }
 
-data = generer_synthese_projet(1)
-
-
 
 
 def convertir_en_materiaux_et_estimer(synthese_quantites, prix_ref):
@@ -192,22 +189,4 @@ def convertir_en_materiaux_et_estimer(synthese_quantites, prix_ref):
     return {
         "Devis Détaillé": devis_detaille,
         "Coût Total Matériaux": round(cout_total, 2)
-    }    
-
-
-result = convertir_en_materiaux_et_estimer(data, prix_ref = [
-        # (materiau, prix, unite)
-        ("Sacs ciment 50kg",         5000,    "sac"),
-        ("Sable (m3)",               25000,   "m3"),
-        ("Gravier (m3)",             30000,   "m3"),
-        ("Sable fin (m3)",           25000,   "m3"),
-        ("Barres HA06 (6m)",         1200,    "barre"),
-        ("Barres HA08 (12m)",        3000,    "barre"),
-        ("Barres HA10 (12m)",        4200,    "barre"),
-        ("Barres HA12 (12m)",        5500,    "barre"),
-        ("Parpaings 20x20x40",       350,     "parpaing"),
-        ("Bac acier / couverture",   8000,    "m2"),
-        ("Bois charpente (m3)",      180000,  "m3"),
-        ("Clous / visserie (kg)",    1500,    "kg"),
-    ])
-print(result)
+    }
