@@ -135,39 +135,39 @@ def _table_section(titre, headers, rows, col_w, s):
 
 
 def _section_murs(murs, s):
-    headers = ["Nom", "Type IFC", "Materiau", "Surface (m2)", "Volume (m3)", "Hauteur (m)"]
-    col_w   = [4*cm, 3*cm, 3.5*cm, 2.5*cm, 2.5*cm, 2*cm]
-    rows = [[m.get("nom_instance","—"), m.get("type_ifc","—"), m.get("materiau","—"),
+    headers = ["Nom", "Type IFC", "Surface (m2)", "Volume (m3)", "Hauteur (m)"]
+    col_w   = [4*cm, 3*cm, 3.5*cm, 2.5*cm, 2*cm]
+    rows = [[m.get("nom_instance","—"), m.get("type_ifc","—"),
              f"{m.get('surface',0):.3f}", f"{m.get('volume',0):.3f}",
              f"{m.get('hauteur',0):.2f}"] for m in murs]
     return _table_section("Murs / Voiles", headers, rows, col_w, s)
 
 
 def _section_fondations(fondations, s):
-    headers = ["Nom", "Type", "Volume (m3)", "Surface (m2)", "Hauteur (m)", "Coffrage (m2)"]
+    headers = ["Nom", "Type", "Volume (m3)", "Surface (m2)", "Perimetre (m)", "Hauteur (m)"]
     col_w   = [4*cm, 3*cm, 2.5*cm, 2.5*cm, 2*cm, 3.5*cm]
     rows = [[f.get("nom_instance","—"), f.get("nom_technique","—"),
              f"{f.get('volume',0):.3f}", f"{f.get('surface_base',0):.3f}",
-             f"{f.get('hauteur',0):.2f}", f"{f.get('surface_coffrage_lateral',0):.3f}"]
+             f"{f.get('perimetre',0):.2f}", f"{f.get('hauteur',0):.3f}"]
             for f in fondations]
     return _table_section("Fondations", headers, rows, col_w, s)
 
 
 def _section_poteaux(poteaux, s):
-    headers = ["Nom", "Section", "Niveau", "Hauteur (m)", "Volume (m3)", "Coffrage (m2)"]
-    col_w   = [4*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm, 3.5*cm]
-    rows = [[p.get("nom","—"), p.get("section","—"), p.get("niveau","—"),
+    headers = ["Nom", "Niveau", "Section",  "Hauteur (m)", "Volume (m3)", ]
+    col_w   = [4*cm, 2.5*cm, 2.5*cm, 2.5*cm, 2.5*cm]
+    rows = [[p.get("nom","—"), p.get("niveau","—"), p.get("surface_section","—"), 
              f"{p.get('hauteur',0):.2f}", f"{p.get('volume_net',0):.3f}",
-             f"{p.get('surface_coffrage',0):.3f}"] for p in poteaux]
+             ] for p in poteaux]
     return _table_section("Poteaux", headers, rows, col_w, s)
 
 
 def _section_toitures(toitures, s):
-    headers = ["Nom", "Type", "Surface rampante (m2)", "Surface projetee (m2)", "Pente (deg)"]
+    headers = ["Nom", "Type", "Surface horizontale (m2)", "Surface reelle (m2)", "Pente (deg)"]
     col_w   = [4*cm, 3.5*cm, 4*cm, 4*cm, 2*cm]
     rows = [[t.get("nom_instance","—"), t.get("type_ifc","—"),
-             f"{t.get('surface_rampante',0):.3f}", f"{t.get('surface_projetee',0):.3f}",
-             f"{t.get('pente',0):.1f}"] for t in toitures]
+             f"{t.get('surface_horizontale',0):.3f}", f"{t.get('surface_reelle',0):.3f}",
+             f"{t.get('pente_moyenne',0):.1f}"] for t in toitures]
     return _table_section("Toitures", headers, rows, col_w, s)
 
 

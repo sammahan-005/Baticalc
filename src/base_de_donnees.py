@@ -48,24 +48,23 @@ def init_db():
         );
 
         -- ── 3. MURS  (sorties réelles de walls.py) ───────────────────
-        --  Champs réels : guid, nom_instance, type_ifc,
-        --                 surface, volume, hauteur
+        --  Champs réels : guid, nom_instance, type_ifc, nom_technique, surface, volume, hauteur
         CREATE TABLE IF NOT EXISTS murs (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            projet_id    INTEGER NOT NULL,
-            guid         TEXT,
-            nom_instance TEXT,
-            type_ifc     TEXT,
-            surface      REAL    DEFAULT 0,
-            volume       REAL    DEFAULT 0,
-            hauteur      REAL    DEFAULT 0,
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            projet_id     INTEGER NOT NULL,
+            guid          TEXT,
+            nom_instance  TEXT,
+            type_ifc      TEXT,
+            nom_technique TEXT,
+            surface       REAL    DEFAULT 0,
+            volume        REAL    DEFAULT 0,
+            hauteur       REAL    DEFAULT 0,
             FOREIGN KEY (projet_id) REFERENCES projets(id)
         );
 
         -- ── 4. FONDATIONS  (sorties réelles de foundations.py) ───────
-        --  Champs réels : guid, nom_instance, type_ifc,
-        --                 volume, surface_base, perimetre, hauteur
-        --  surface_coffrage_lateral est calculé (perimetre * hauteur)
+        --  Champs réels : guid, nom_instance, type_ifc, volume, surface_base, perimetre, hauteur
+        --  (surface_coffrage_lateral calculé = perimetre * hauteur)
         CREATE TABLE IF NOT EXISTS fondations (
             id                      INTEGER PRIMARY KEY AUTOINCREMENT,
             projet_id               INTEGER NOT NULL,
@@ -81,9 +80,8 @@ def init_db():
         );
 
         -- ── 5. POTEAUX  (sorties réelles de column.py) ───────────────
-        --  Champs réels : guid, nom, etage, materiau,
-        --                 hauteur, surface_section, volume_net,
-        --                 poids_estime_kg
+        --  Champs réels : guid, nom, etage, materiau, hauteur, surface_section, volume_net
+        --  (poids_estime_kg calculé si besoin)
         CREATE TABLE IF NOT EXISTS poteaux (
             id               INTEGER PRIMARY KEY AUTOINCREMENT,
             projet_id        INTEGER NOT NULL,
@@ -99,16 +97,13 @@ def init_db():
         );
 
         -- ── 6. TOITURES  (sorties réelles de roof.py) ────────────────
-        --  Champs réels : id (ifc), guid, nom, type_objet, etage,
-        --                 surface_horizontale, surface_reelle,
-        --                 pente_moyenne
+        --  Champs réels : guid, nom_instance, type_ifc, etage, surface_horizontale, surface_reelle, pente_moyenne
         CREATE TABLE IF NOT EXISTS toitures (
             id                  INTEGER PRIMARY KEY AUTOINCREMENT,
             projet_id           INTEGER NOT NULL,
-            ifc_id              INTEGER,
             guid                TEXT,
-            nom                 TEXT,
-            type_objet          TEXT,
+            nom_instance        TEXT,
+            type_ifc            TEXT,
             etage               TEXT,
             surface_horizontale REAL    DEFAULT 0,
             surface_reelle      REAL    DEFAULT 0,
@@ -239,6 +234,8 @@ def creer_projet(utilisateur_id: int, nom: str, chemin_ifc: str) -> dict:
         return {"succes": False, "erreur": str(e)}
 
 
+
+
 def get_projets_utilisateur(utilisateur_id: int) -> list:
     """Retourne tous les projets d'un utilisateur, du plus récent au plus ancien."""
     conn = get_connection()
@@ -262,6 +259,8 @@ def mettre_a_jour_statut_projet(projet_id: int, statut: str):
     conn.close()
 
 
+
+
 # ─────────────────────────────────────────────
 #  SAUVEGARDE DES RÉSULTATS IFC
 # ─────────────────────────────────────────────
@@ -273,13 +272,14 @@ def sauvegarder_murs(projet_id: int, murs: list):
     for m in murs:
         cursor.execute("""
             INSERT INTO murs
-                (projet_id, guid, nom_instance, type_ifc, surface, volume, hauteur)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (projet_id, guid, nom_instance, type_ifc, nom_technique, surface, volume, hauteur)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             projet_id,
             m.get("guid", ""),
             m.get("nom_instance", ""),
             m.get("type_ifc", ""),
+            m.get("nom_technique", ""),  # nouveau champ
             m.get("surface", 0),
             m.get("volume", 0),
             m.get("hauteur", 0),
@@ -335,7 +335,7 @@ def sauvegarder_poteaux(projet_id: int, poteaux: list):
             p.get("hauteur", 0),
             p.get("surface_section", 0),
             p.get("volume_net", 0),
-            p.get("poids_estime_kg", 0),
+            p.get("poids_estime_kg", 0),  # calculé si besoin
         ))
     conn.commit()
     conn.close()
@@ -348,15 +348,14 @@ def sauvegarder_toitures(projet_id: int, toitures: list):
     for t in toitures:
         cursor.execute("""
             INSERT INTO toitures
-                (projet_id, ifc_id, guid, nom, type_objet, etage,
+                (projet_id, guid, nom_instance, type_ifc, etage,
                  surface_horizontale, surface_reelle, pente_moyenne)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             projet_id,
-            t.get("id", None),
             t.get("guid", ""),
-            t.get("nom", ""),
-            t.get("type_objet", ""),
+            t.get("nom_instance", ""),  # changé de 'nom'
+            t.get("type_ifc", ""),      # changé de 'type_objet'
             t.get("etage", ""),
             t.get("surface_horizontale", 0),
             t.get("surface_reelle", 0),
