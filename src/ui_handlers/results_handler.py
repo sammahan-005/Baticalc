@@ -471,6 +471,39 @@ class ResultsWindow(QMainWindow):
                 self, "Erreur export", f"Impossible de creer le PDF :\n{e}"
             )
 
+
+        try:
+            from src.export.exporter_devis_pdf import exporter_devis_pdf
+            import shutil
+
+            pdf = exporter_devis_pdf(
+                resultat_devis=self.resultat_devis,
+                nom_projet=self.nom_projet,
+                nom_utilisateur=self.utilisateur.get("nom", ""),
+                chemin_ifc=self.chemin_ifc,
+                output_dir=os.path.dirname(chemin)
+            )
+
+            if pdf != chemin:
+                shutil.move(pdf, chemin)
+
+            QMessageBox.information(
+                self, "PDF exporté", f"Devis enregistré :\n{chemin}"
+            )
+
+            import subprocess, platform
+            if platform.system() == "Windows":
+                os.startfile(chemin)
+            elif platform.system() == "Darwin":
+                subprocess.run(["open", chemin])
+            else:
+                subprocess.run(["xdg-open", chemin])
+
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Erreur export", f"Impossible de créer le devis PDF :\n{e}"
+            )
+
     # ── Back ──────────────────────────────────────────────────────────────────
 
     def on_retour(self):

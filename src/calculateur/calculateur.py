@@ -126,7 +126,7 @@ def generer_synthese_projet( projet_id):
         "Toiture": calculer_quantites_toiture( projet_id)
     }
 
-# data = generer_synthese_projet(1)
+data = generer_synthese_projet(1)
 
 
 
@@ -154,7 +154,7 @@ def convertir_en_materiaux_et_estimer(synthese_quantites, prix_ref):
         "Sable fin (m3)": 0,
         "Parpaings 20x20x40": 0,
         "Barres HA10 (12m)": 0,  # Utilisé comme moyenne représentative pour simplifier
-        "Bac acier / couverture": surface_toit_reelle * 1.1, # +10% de recouvrement/chutes
+        "Bac acier / couverture": surface_toit_reelle * 1.3, # +30% de recouvrement/chutes
         "Bois charpente (m3)": surface_toit_horiz * 0.05,    # Ratio estimatif m3 de bois par m2 de toiture
         "Clous / visserie (kg)": surface_toit_horiz * 0.15
     }
@@ -171,7 +171,7 @@ def convertir_en_materiaux_et_estimer(synthese_quantites, prix_ref):
 
     # Aciers (Conversion kg -> barres. Ex: HA10 pèse environ 7.4 kg/barre de 12m)
     poids_moyen_barre_12m = 7.4 
-    besoins_materiaux["Barres HA10 (12m)"] += (poids_acier_total / poids_moyen_barre_12m) * 1.05 # +5% de chutes
+    besoins_materiaux["Barres HA10 (12m)"] += (poids_acier_total / poids_moyen_barre_12m) * 1.1 # +10% de chutes
 
     # 3. Calcul du devis
     devis_detaille = {}
@@ -195,19 +195,19 @@ def convertir_en_materiaux_et_estimer(synthese_quantites, prix_ref):
     }    
 
 
-# result = convertir_en_materiaux_et_estimer(data, prix_ref = [
-#         # (materiau, prix, unite)
-#         ("Sacs ciment 50kg",         5000,    "sac"),
-#         ("Sable (m3)",               25000,   "m3"),
-#         ("Gravier (m3)",             30000,   "m3"),
-#         ("Sable fin (m3)",           25000,   "m3"),
-#         ("Barres HA06 (6m)",         1200,    "barre"),
-#         ("Barres HA08 (12m)",        3000,    "barre"),
-#         ("Barres HA10 (12m)",        4200,    "barre"),
-#         ("Barres HA12 (12m)",        5500,    "barre"),
-#         ("Parpaings 20x20x40",       350,     "parpaing"),
-#         ("Bac acier / couverture",   8000,    "m2"),
-#         ("Bois charpente (m3)",      180000,  "m3"),
-#         ("Clous / visserie (kg)",    1500,    "kg"),
-#     ])
-# print(result)
+result = convertir_en_materiaux_et_estimer(data, prix_ref = [
+        # (materiau, prix, unite)
+        ("Sacs ciment 50kg",         5000,    "sac"),
+        ("Sable (m3)",               25000,   "m3"),
+        ("Gravier (m3)",             30000,   "m3"),
+        ("Sable fin (m3)",           25000,   "m3"),
+        ("Barres HA06 (6m)",         1200,    "barre"),
+        ("Barres HA08 (12m)",        3000,    "barre"),
+        ("Barres HA10 (12m)",        4200,    "barre"),
+        ("Barres HA12 (12m)",        5500,    "barre"),
+        ("Parpaings 20x20x40",       350,     "parpaing"),
+        ("Bac acier / couverture",   8000,    "m2"),
+        ("Bois charpente (m3)",      180000,  "m3"),
+        ("Clous / visserie (kg)",    1500,    "kg"),
+    ])
+print(result)
