@@ -169,6 +169,7 @@ class ResultsWindow(QMainWindow):
         self.utilisateur   = utilisateur
         self.dashboard_ref = dashboard_ref
         self.rapport       = None
+        self.resultat_devis = None
         self.setWindowTitle(f"BATICALC — {nom_projet}")
         self.resize(1200, 780)
         self.setStyleSheet(STYLE)
@@ -371,6 +372,7 @@ class ResultsWindow(QMainWindow):
         )
         self.btn_pdf.setEnabled(True)
         QTimer.singleShot(400, lambda: self.loading_bar.hide())
+        self._sauvegarder_et_calculer()
 
     def _on_analyse_erreur(self, msg):
         self._loading_timer.stop()
@@ -433,43 +435,145 @@ class ResultsWindow(QMainWindow):
             for t in toitures
         ])
 
+    # ── Devis calculation ─────────────────────────────────────────────────────
+
+    def _sauvegarder_et_calculer(self):
+        """Save results to DB (marks project as termine) then compute devis."""
+        try:
+            import session
+            projet_id = session.projet_actuel.get("id")
+            if projet_id and self.rapport:
+                from src.base_de_donnees import sauvegarder_resultats_ifc
+                sauvegarder_resultats_ifc(projet_id, self.rapport)
+        except Exception as e:
+            pass  # Non-fatal: UI still works even if DB save fails
+        self._calculer_devis()
+
+    def _calculer_devis(self):
+        """Compute resultat_devis from the current rapport using the calculateur."""
+        try:
+            import session
+            projet_id = session.projet_actuel.get("id")
+            if not projet_id:
+                return
+
+            from src.calculateur.calculateur import (
+                generer_synthese_projet, convertir_en_materiaux_et_estimer
+            )
+
+            synthese = generer_synthese_projet(projet_id)
+
+            # Prix du marché Cameroun (Yaoundé/Douala) — référence 2024-2025
+            prix_ref = [
+                ("Sacs ciment 50kg",        5400,   "sac"),     # Cimencam/Lafarge ~5 400 FCFA
+                ("Sable (m3)",              9000,   "m3"),      # Camion 20t=180 000 FCFA → ~9 000/m3
+                ("Gravier (m3)",            10000,  "m3"),     # Camion 20t à 145 000 FCFA → ~7 250/t, ~10 000/m3
+                ("Sable fin (m3)",          10000,  "m3"),     # Sable fin carrière ≈ 10 000 FCFA/m3
+                ("Barres HA06 (6m)",        1500,   "barre"),  # Barre HA6 6m ≈ 1 500 FCFA
+                ("Barres HA08 (12m)",       3055,   "barre"),  # HA8 12m Yaoundé ≈ 3 055 FCFA
+                ("Barres HA10 (12m)",       4680,   "barre"),  # HA10 12m Yaoundé ≈ 4 680 FCFA
+                ("Barres HA12 (12m)",       6725,   "barre"),  # HA12 12m Yaoundé ≈ 6 725 FCFA
+                ("Parpaings 20x20x40",      280,    "parpaing"), # Parpaing 20cm ≈ 280 FCFA/pièce
+                ("Bac acier / couverture",  6500,   "m2"),     # Tôle bac ALUCAM/SOCATRAL ≈ 6 500 FCFA/m2
+                ("Bois charpente (m3)",     200000, "m3"),     # Bois charpente locale ≈ 200 000 FCFA/m3
+                ("Clous / visserie (kg)",   1500,   "kg"),     # Clous/visserie ≈ 1 500 FCFA/kg
+            ]
+
+            self.resultat_devis = convertir_en_materiaux_et_estimer(synthese, prix_ref)
+
+        except Exception as e:
+            # Non-fatal: devis won't export but analysis PDF still works
+            self.resultat_devis = None
+
     # ── Export PDF ────────────────────────────────────────────────────────────
 
     def on_exporter_pdf(self):
         if not self.rapport:
             return
-        chemin, _ = QFileDialog.getSaveFileName(
-            self, "Enregistrer le rapport PDF",
-            f"BATICALC_{self.nom_projet}.pdf", "PDF (*.pdf)"
-        )
-        if not chemin:
-            return
-        try:
-            from src.export.pdf_exporter import exporter_pdf
-            import shutil
-            pdf = exporter_pdf(
-                rapport=self.rapport,
-                nom_projet=self.nom_projet,
-                nom_utilisateur=self.utilisateur.get("nom", ""),
-                chemin_ifc=self.chemin_ifc,
-                output_dir=os.path.dirname(chemin)
+
+        import shutil, subprocess, platform
+
+        # Ask once: does the user want the analysis report or the devis?
+        if self.resultat_devis:
+            from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
+            dlg = QDialog(self)
+            dlg.setWindowTitle("Type de PDF")
+            dlg.setStyleSheet("background:#0D1117; color:white;")
+            v = QVBoxLayout(dlg)
+            v.addWidget(QLabel("Quel document voulez-vous exporter ?"))
+            h = QHBoxLayout()
+            btn_rapport = QPushButton("Rapport d'analyse")
+            btn_devis   = QPushButton("Devis matériaux")
+            btn_rapport.setCursor(Qt.PointingHandCursor)
+            btn_devis.setCursor(Qt.PointingHandCursor)
+            h.addWidget(btn_rapport)
+            h.addWidget(btn_devis)
+            v.addLayout(h)
+            choice = {"val": None}
+            btn_rapport.clicked.connect(lambda: (choice.update(val="rapport"), dlg.accept()))
+            btn_devis.clicked.connect(lambda:   (choice.update(val="devis"),   dlg.accept()))
+            dlg.exec()
+            if choice["val"] is None:
+                return
+            export_type = choice["val"]
+        else:
+            export_type = "rapport"
+
+        if export_type == "rapport":
+            chemin, _ = QFileDialog.getSaveFileName(
+                self, "Enregistrer le rapport PDF",
+                f"BATICALC_{self.nom_projet}.pdf", "PDF (*.pdf)"
             )
-            if pdf != chemin:
-                shutil.move(pdf, chemin)
-            QMessageBox.information(
-                self, "PDF exporte", f"Rapport enregistre :\n{chemin}"
+            if not chemin:
+                return
+            try:
+                from src.export.pdf_exporter import exporter_pdf
+                pdf = exporter_pdf(
+                    rapport=self.rapport,
+                    nom_projet=self.nom_projet,
+                    nom_utilisateur=self.utilisateur.get("nom", ""),
+                    chemin_ifc=self.chemin_ifc,
+                    output_dir=os.path.dirname(chemin)
+                )
+                if pdf != chemin:
+                    shutil.move(pdf, chemin)
+                QMessageBox.information(self, "PDF exporté", f"Rapport enregistré :\n{chemin}")
+                if platform.system() == "Windows":
+                    os.startfile(chemin)
+                elif platform.system() == "Darwin":
+                    subprocess.run(["open", chemin])
+                else:
+                    subprocess.run(["xdg-open", chemin])
+            except Exception as e:
+                QMessageBox.critical(self, "Erreur export", f"Impossible de créer le PDF :\n{e}")
+
+        else:  # devis
+            chemin, _ = QFileDialog.getSaveFileName(
+                self, "Enregistrer le devis PDF",
+                f"BATICALC_DEVIS_{self.nom_projet}.pdf", "PDF (*.pdf)"
             )
-            import subprocess, platform
-            if platform.system() == "Windows":
-                os.startfile(chemin)
-            elif platform.system() == "Darwin":
-                subprocess.run(["open", chemin])
-            else:
-                subprocess.run(["xdg-open", chemin])
-        except Exception as e:
-            QMessageBox.critical(
-                self, "Erreur export", f"Impossible de creer le PDF :\n{e}"
-            )
+            if not chemin:
+                return
+            try:
+                from src.export.exporter_devis_pdf import exporter_devis_pdf
+                pdf = exporter_devis_pdf(
+                    resultat_devis=self.resultat_devis,
+                    nom_projet=self.nom_projet,
+                    nom_utilisateur=self.utilisateur.get("nom", ""),
+                    chemin_ifc=self.chemin_ifc,
+                    output_dir=os.path.dirname(chemin)
+                )
+                if pdf != chemin:
+                    shutil.move(pdf, chemin)
+                QMessageBox.information(self, "PDF exporté", f"Devis enregistré :\n{chemin}")
+                if platform.system() == "Windows":
+                    os.startfile(chemin)
+                elif platform.system() == "Darwin":
+                    subprocess.run(["open", chemin])
+                else:
+                    subprocess.run(["xdg-open", chemin])
+            except Exception as e:
+                QMessageBox.critical(self, "Erreur export", f"Impossible de créer le devis PDF :\n{e}")
 
     # ── Back ──────────────────────────────────────────────────────────────────
 
