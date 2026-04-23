@@ -87,6 +87,6 @@ L'application intègre des ratios basés sur les pratiques de construction local
 
     [x] Parseurs IFC (Murs, Poteaux, Fondations) 
 
-    [ ] Finalisation du module de calcul des matériaux (En cours) 
+    [x] Finalisation du module de calcul des matériaux 
 
-    [ ] Export PDF et rapports détaillés
+    [x] Export PDF et rapports détaillés
